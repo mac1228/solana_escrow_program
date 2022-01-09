@@ -3,8 +3,7 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import MaterialUIProviders from "./MaterialUIProviders";
-import SolanaWalletProviders from "./SolanaWalletProviders";
+import { MaterialUIProviders, SolanaWalletProviders } from "Providers";
 
 ReactDOM.render(
   <React.StrictMode>

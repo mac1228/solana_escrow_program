@@ -18,7 +18,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": "./src", // Allows nice looking imports. For example, import { HeaderBar } from "Components"
   },
   "include": [
     "src"

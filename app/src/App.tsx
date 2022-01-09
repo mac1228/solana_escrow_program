@@ -3,14 +3,10 @@ import "./App.css";
 import { Connection, PublicKey, ConfirmOptions } from "@solana/web3.js";
 import { Program, Provider, Idl } from "@project-serum/anchor";
 import idl from "./idl.json";
-import {
-  WalletMultiButton,
-  WalletDisconnectButton,
-} from "@solana/wallet-adapter-material-ui";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { Toolbar, Typography, AppBar, Button } from "@mui/material";
-import DisconnectIcon from "@mui/icons-material/LinkOff";
+import { Button } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { HeaderBar } from "Components";
 
 export default function App() {
   const opts: ConfirmOptions = {
@@ -35,20 +31,7 @@ export default function App() {
 
   return (
     <div className="App">
-      <AppBar position="static">
-        <Toolbar style={{ display: "flex" }}>
-          <Typography component="h1" variant="h6" style={{ flexGrow: 1 }}>
-            Solana Escrow Program
-          </Typography>
-          <WalletMultiButton />
-          {wallet && (
-            <WalletDisconnectButton
-              startIcon={<DisconnectIcon />}
-              style={{ marginLeft: 8 }}
-            />
-          )}
-        </Toolbar>
-      </AppBar>
+      <HeaderBar />
       <div
         style={{
           display: "flex",

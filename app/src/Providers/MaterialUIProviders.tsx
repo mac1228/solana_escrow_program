@@ -1,5 +1,4 @@
 import * as React from "react";
-import "./App.css";
 import {
   createTheme,
   StyledEngineProvider,
@@ -47,7 +46,7 @@ interface IMaterialUIProviderProps {
   children: React.ReactNode;
 }
 
-export default function MaterialUIProviders(props: IMaterialUIProviderProps) {
+export function MaterialUIProviders(props: IMaterialUIProviderProps) {
   return (
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>

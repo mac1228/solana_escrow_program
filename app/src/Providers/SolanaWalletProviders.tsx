@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import "./App.css";
 import { WalletError } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { WalletDialogProvider } from "@solana/wallet-adapter-material-ui";
@@ -13,7 +12,7 @@ interface ISolanaWalletProviders {
   children: React.ReactNode;
 }
 
-export default function SolanaWalletProviders(props: ISolanaWalletProviders) {
+export function SolanaWalletProviders(props: ISolanaWalletProviders) {
   const wallets = [new PhantomWalletAdapter()];
   const { enqueueSnackbar } = useSnackbar();
 
