@@ -1,0 +1,14 @@
+{
+    "version": "0.1.0",
+    "name": "solana_escrow",
+    "instructions": [
+      {
+        "name": "initialize",
+        "accounts": [],
+        "args": []
+      }
+    ],
+    "metadata": {
+      "address": "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
+    }
+  }
