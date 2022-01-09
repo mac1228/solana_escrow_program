@@ -1,75 +1,22 @@
-import React, { useCallback } from "react";
+import React from "react";
 import "./App.css";
 import { Connection, PublicKey, ConfirmOptions } from "@solana/web3.js";
 import { Program, Provider, Idl } from "@project-serum/anchor";
 import idl from "./idl.json";
-import { WalletError } from "@solana/wallet-adapter-base";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import {
-  WalletDialogProvider,
   WalletMultiButton,
   WalletDisconnectButton,
 } from "@solana/wallet-adapter-material-ui";
-import {
-  useAnchorWallet,
-  WalletProvider,
-  ConnectionProvider,
-} from "@solana/wallet-adapter-react";
-import {
-  createTheme,
-  StyledEngineProvider,
-  ThemeProvider,
-  Toolbar,
-  Typography,
-  AppBar,
-  Button,
-} from "@mui/material";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
+import { Toolbar, Typography, AppBar, Button } from "@mui/material";
 import DisconnectIcon from "@mui/icons-material/LinkOff";
-import { deepPurple } from "@mui/material/colors";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 
-const theme = createTheme({
-  typography: {
-    fontFamily: "IBM Plex Mono",
-  },
-  palette: {
-    mode: "dark",
-    primary: {
-      main: deepPurple[700],
-    },
-  },
-  components: {
-    MuiButtonBase: {
-      styleOverrides: {
-        root: {
-          justifyContent: "flex-start",
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: "none",
-          padding: "12px 16px",
-        },
-        startIcon: {
-          marginRight: 8,
-        },
-        endIcon: {
-          marginLeft: 8,
-        },
-      },
-    },
-  },
-});
-
-const wallets = [new PhantomWalletAdapter()];
-const opts: ConfirmOptions = {
-  preflightCommitment: "processed",
-};
-const programID = new PublicKey(idl.metadata.address);
-
-function App() {
+export default function App() {
+  const opts: ConfirmOptions = {
+    preflightCommitment: "processed",
+  };
+  const programID = new PublicKey(idl.metadata.address);
   const { enqueueSnackbar } = useSnackbar();
   const wallet = useAnchorWallet();
   const network = "http://127.0.0.1:8899";
@@ -110,49 +57,11 @@ function App() {
           marginTop: "2rem",
         }}
       >
+        <div>Hello World</div>
         <Button variant={"contained"} onClick={initializeAccount}>
           Initialize Account
         </Button>
-        <div>Hello World</div>
       </div>
     </div>
   );
 }
-
-const AppWithWalletProviders = () => {
-  const { enqueueSnackbar } = useSnackbar();
-  const onError = useCallback(
-    (error: WalletError) => {
-      enqueueSnackbar(
-        error.message ? `${error.name}: ${error.message}` : error.name,
-        { variant: "error" }
-      );
-      console.error(error);
-    },
-    [enqueueSnackbar]
-  );
-
-  return (
-    <ConnectionProvider endpoint="http://127.0.0.1:8899">
-      <WalletProvider wallets={wallets} onError={onError} autoConnect>
-        <WalletDialogProvider>
-          <App />
-        </WalletDialogProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
-};
-
-const AppWithAllProviders = () => {
-  return (
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme}>
-        <SnackbarProvider>
-          <AppWithWalletProviders />
-        </SnackbarProvider>
-      </ThemeProvider>
-    </StyledEngineProvider>
-  );
-};
-
-export default AppWithAllProviders;
