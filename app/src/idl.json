@@ -1,14 +1,65 @@
 {
-    "version": "0.1.0",
-    "name": "solana_escrow",
-    "instructions": [
-      {
-        "name": "initialize",
-        "accounts": [],
-        "args": []
-      }
-    ],
-    "metadata": {
-      "address": "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
+  "version": "0.1.0",
+  "name": "solana_escrow",
+  "instructions": [
+    {
+      "name": "createBioAccount",
+      "accounts": [
+        {
+          "name": "bioAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "updateName",
+      "accounts": [
+        {
+          "name": "bioAccount",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
     }
+  ],
+  "accounts": [
+    {
+      "name": "BioAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "address": "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
   }
+}

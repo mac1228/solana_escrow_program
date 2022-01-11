@@ -29,7 +29,7 @@ export function SolanaWalletProviders(props: ISolanaWalletProviders) {
 
   return (
     <ConnectionProvider endpoint="http://127.0.0.1:8899">
-      <WalletProvider wallets={wallets} onError={onError} autoConnect>
+      <WalletProvider wallets={wallets} onError={onError}>
         <WalletDialogProvider>{props.children}</WalletDialogProvider>
       </WalletProvider>
     </ConnectionProvider>

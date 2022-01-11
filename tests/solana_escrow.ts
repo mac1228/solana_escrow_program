@@ -10,26 +10,40 @@ describe('solana_escrow', () => {
   anchor.setProvider(provider);
   const program = (anchor as any).workspace.SolanaEscrow as Program<SolanaEscrow>;
 
-  it("Creates blah account", async () => {
-    // Create keybpair for Blah Account
-    const blahAccount = anchor.web3.Keypair.generate();
-    const bigNumber = new anchor.BN(150);
+  const bioAccount = anchor.web3.Keypair.generate();
 
-    // Make rpc request to program to Blah Account with 150 in it's data field
-    await program.rpc.createBlahAccount(bigNumber, {
+  it("Creates bio account", async () => {
+    // Create keybpair for Blah Account
+    
+    const name = "Michael Curd";
+
+    // Make rpc request to Solana program to create Bio Account with "Michael Curd" in the name field
+    await program.rpc.createBioAccount(name, {
       accounts: {
-        blahAccount: blahAccount.publicKey,
+        bioAccount: bioAccount.publicKey,
         user: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       },
-      signers: [blahAccount]
+      signers: [bioAccount]
     });
 
-    // fetch newly created blah account
-    const account = await program.account.blahAccount.fetch(blahAccount.publicKey);
+    // fetch newly created bio account
+    const account = await program.account.bioAccount.fetch(bioAccount.publicKey);
 
-    // assert that account data is 150
-    assert.ok(account.data.eq(bigNumber))
+    // assert that account name is "Michael Curd"
+    assert.ok(account.name === name);
+  });
+
+  it("Updates name in bio account", async () => {
+    const updatedName = "Michael Armon Curd";
+    await program.rpc.updateName(updatedName, {
+      accounts: {
+        bioAccount: bioAccount.publicKey
+      }
+    });
+
+    const account = await program.account.bioAccount.fetch(bioAccount.publicKey);
+    assert.ok(account.name === updatedName);
   });
 
   it("Creates new token", async () => {
