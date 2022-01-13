@@ -1,10 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import "./App.css";
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import idl from "./idl.json";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { Button, Input } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { HeaderBar } from "Components";
 
@@ -24,53 +24,34 @@ export default function App() {
     program = new anchor.Program(idl as anchor.Idl, programID, provider);
   }
 
-  const bioAccontKeypairRef = useRef(web3.Keypair.generate());
-  const [bioAccountName, setBioAccountName] = useState<string>();
-  const nameInputRef = useRef<HTMLInputElement>();
-  const NO_NAME = "No Name";
+  const mintPublicKeyRef = useRef<HTMLInputElement>();
+  const itemNameRef = useRef<HTMLInputElement>();
+  const marketNameRef = useRef<HTMLInputElement>();
 
-  const onCreateNameClick = async () => {
+  const onAddItemClick = async () => {
     try {
-      const name = nameInputRef.current?.value || NO_NAME;
-      await program.rpc.createBioAccount(name, {
-        accounts: {
-          bioAccount: bioAccontKeypairRef.current.publicKey,
-          user: provider.wallet.publicKey,
-          systemProgram: web3.SystemProgram.programId,
-        },
-        signers: [bioAccontKeypairRef.current],
-      });
-      enqueueSnackbar("Created Bio account", { variant: "success" });
-      const account = await program.account.bioAccount.fetch(
-        bioAccontKeypairRef.current.publicKey
-      );
-      setBioAccountName(account.name);
+      const mintPublicKey = web3.Keypair.generate().publicKey;
+      const itemName = itemNameRef.current?.value;
+      const marketName = marketNameRef.current?.value;
+      if (mintPublicKey && itemName && marketName) {
+        const itemAccount = web3.Keypair.generate();
+        await program.rpc.createItemAccount(
+          mintPublicKey,
+          itemName,
+          marketName,
+          {
+            accounts: {
+              itemAccount: itemAccount.publicKey,
+              user: provider.wallet.publicKey,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [itemAccount],
+          }
+        );
+        enqueueSnackbar("Created Item account", { variant: "success" });
+      }
     } catch (err) {
-      enqueueSnackbar("Failed to create Bio account", { variant: "error" });
-    }
-  };
-
-  const onUpdateNameClick = async () => {
-    try {
-      const updatedName = nameInputRef.current?.value || NO_NAME;
-      await program.rpc.updateName(updatedName, {
-        accounts: {
-          bioAccount: bioAccontKeypairRef.current.publicKey,
-        },
-      });
-      enqueueSnackbar("Updated Bio account", { variant: "success" });
-      const account = await program.account.bioAccount.fetch(
-        bioAccontKeypairRef.current.publicKey
-      );
-      setBioAccountName(account.name);
-    } catch (err) {
-      enqueueSnackbar("Failed to update Bio account", { variant: "error" });
-    }
-  };
-
-  const handleEnterKeypress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      bioAccountName ? onUpdateNameClick() : onCreateNameClick();
+      enqueueSnackbar("Failed to create Item account", { variant: "error" });
     }
   };
 
@@ -85,30 +66,32 @@ export default function App() {
           marginTop: "2rem",
         }}
       >
-        <div style={{ marginBottom: "2rem" }}>
-          <div style={{ display: "flex" }}>
-            <h1 style={{ marginRight: "1rem" }}>
-              {bioAccountName ? `Welcome ${bioAccountName}!` : "Welcome!"}
-            </h1>
-            {/* {bioAccountName ? <h1>{bioAccountName}</h1> : <h1>Who are you?</h1>} */}
-          </div>
-          <div style={{ display: "flex" }}>
-            <Input
-              style={{ marginRight: "1rem" }}
-              placeholder="Type name here"
-              inputRef={nameInputRef}
-              onKeyDown={handleEnterKeypress}
-            ></Input>
-            {bioAccountName ? (
-              <Button variant="contained" onClick={onUpdateNameClick}>
-                Update Name
-              </Button>
-            ) : (
-              <Button variant="contained" onClick={onCreateNameClick}>
-                Create Name
-              </Button>
-            )}
-          </div>
+        <h1>Add your items to the market!</h1>
+        <div
+          style={{
+            display: "flex",
+            width: "50%",
+            justifyContent: "space-between",
+          }}
+        >
+          <TextField
+            label="Mint Public Key"
+            inputRef={mintPublicKeyRef}
+            variant="standard"
+          />
+          <TextField
+            label="Item Name"
+            inputRef={itemNameRef}
+            variant="standard"
+          />
+          <TextField
+            label="Market Name"
+            inputRef={marketNameRef}
+            variant="standard"
+          />
+          <Button variant="contained" onClick={onAddItemClick}>
+            Add item to market
+          </Button>
         </div>
       </div>
     </div>

@@ -3,10 +3,10 @@
   "name": "solana_escrow",
   "instructions": [
     {
-      "name": "createBioAccount",
+      "name": "createItemAccount",
       "accounts": [
         {
-          "name": "bioAccount",
+          "name": "itemAccount",
           "isMut": true,
           "isSigner": true
         },
@@ -23,23 +23,15 @@
       ],
       "args": [
         {
+          "name": "mintPublicKey",
+          "type": "publicKey"
+        },
+        {
           "name": "name",
           "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "updateName",
-      "accounts": [
+        },
         {
-          "name": "bioAccount",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "name",
+          "name": "market",
           "type": "string"
         }
       ]
@@ -47,12 +39,20 @@
   ],
   "accounts": [
     {
-      "name": "BioAccount",
+      "name": "ItemAccount",
       "type": {
         "kind": "struct",
         "fields": [
           {
+            "name": "mintPublicKey",
+            "type": "publicKey"
+          },
+          {
             "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "market",
             "type": "string"
           }
         ]

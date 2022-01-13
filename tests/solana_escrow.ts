@@ -10,40 +10,29 @@ describe('solana_escrow', () => {
   anchor.setProvider(provider);
   const program = (anchor as any).workspace.SolanaEscrow as Program<SolanaEscrow>;
 
-  const bioAccount = anchor.web3.Keypair.generate();
+  const itemAccount = anchor.web3.Keypair.generate();
 
-  it("Creates bio account", async () => {
-    // Create keybpair for Blah Account
-    
-    const name = "Michael Curd";
+  it("Creates item account", async () => {    
+    const initialTokenSupply = new anchor.BN(200);
+    const [mintPublicKey] = await createMintAndVault(provider, initialTokenSupply);
+    const name = "Apples";
+    const market = "Fruit";
 
-    // Make rpc request to Solana program to create Bio Account with "Michael Curd" in the name field
-    await program.rpc.createBioAccount(name, {
+    // Make rpc request to Solana program to create Item account for Apples in the Fruit market
+    await program.rpc.createItemAccount(mintPublicKey, name, market, {
       accounts: {
-        bioAccount: bioAccount.publicKey,
+        itemAccount: itemAccount.publicKey,
         user: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       },
-      signers: [bioAccount]
+      signers: [itemAccount]
     });
 
-    // fetch newly created bio account
-    const account = await program.account.bioAccount.fetch(bioAccount.publicKey);
+    // fetch newly created item account
+    const account = await program.account.itemAccount.fetch(itemAccount.publicKey);
 
-    // assert that account name is "Michael Curd"
+    // assert that account name is "Apples"
     assert.ok(account.name === name);
-  });
-
-  it("Updates name in bio account", async () => {
-    const updatedName = "Michael Armon Curd";
-    await program.rpc.updateName(updatedName, {
-      accounts: {
-        bioAccount: bioAccount.publicKey
-      }
-    });
-
-    const account = await program.account.bioAccount.fetch(bioAccount.publicKey);
-    assert.ok(account.name === updatedName);
   });
 
   it("Creates new token", async () => {
