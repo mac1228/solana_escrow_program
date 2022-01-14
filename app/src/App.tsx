@@ -7,6 +7,14 @@ import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Button, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { HeaderBar } from "Components";
+import {
+  createAccountRentExempt,
+  createMintAndVault,
+  createTokenAccount,
+  getMintInfo,
+  getTokenAccount,
+} from "@project-serum/common";
+import { transfer, mintTo } from "@project-serum/serum/lib/token-instructions";
 
 export default function App() {
   const opts: web3.ConfirmOptions = {
@@ -24,34 +32,46 @@ export default function App() {
     program = new anchor.Program(idl as anchor.Idl, programID, provider);
   }
 
-  const mintPublicKeyRef = useRef<HTMLInputElement>();
   const itemNameRef = useRef<HTMLInputElement>();
   const marketNameRef = useRef<HTMLInputElement>();
+  const supplyRef = useRef<HTMLInputElement>();
 
   const onAddItemClick = async () => {
-    try {
-      const mintPublicKey = web3.Keypair.generate().publicKey;
-      const itemName = itemNameRef.current?.value;
-      const marketName = marketNameRef.current?.value;
-      if (mintPublicKey && itemName && marketName) {
-        const itemAccount = web3.Keypair.generate();
-        await program.rpc.createItemAccount(
-          mintPublicKey,
-          itemName,
-          marketName,
-          {
-            accounts: {
-              itemAccount: itemAccount.publicKey,
-              user: provider.wallet.publicKey,
-              systemProgram: web3.SystemProgram.programId,
-            },
-            signers: [itemAccount],
-          }
+    const itemName = itemNameRef.current?.value;
+    const marketName = marketNameRef.current?.value;
+    const supply = supplyRef.current?.value;
+    if (itemName && marketName && supply) {
+      try {
+        const initialTokenSupply = new anchor.BN(supply);
+        const [mintPublicKey, vaultPublicKey] = await createMintAndVault(
+          provider,
+          initialTokenSupply
         );
-        enqueueSnackbar("Created Item account", { variant: "success" });
+
+        if (mintPublicKey && itemName && marketName) {
+          const itemAccount = web3.Keypair.generate();
+          await program.rpc.createItemAccount(
+            mintPublicKey,
+            itemName,
+            marketName,
+            {
+              accounts: {
+                itemAccount: itemAccount.publicKey,
+                user: provider.wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+              },
+              signers: [itemAccount],
+            }
+          );
+          enqueueSnackbar("Created Item account", { variant: "success" });
+        }
+      } catch (err) {
+        enqueueSnackbar("Failed to create Item account", { variant: "error" });
       }
-    } catch (err) {
-      enqueueSnackbar("Failed to create Item account", { variant: "error" });
+    } else {
+      enqueueSnackbar("Must provide value for all fields", {
+        variant: "error",
+      });
     }
   };
 
@@ -75,11 +95,6 @@ export default function App() {
           }}
         >
           <TextField
-            label="Mint Public Key"
-            inputRef={mintPublicKeyRef}
-            variant="standard"
-          />
-          <TextField
             label="Item Name"
             inputRef={itemNameRef}
             variant="standard"
@@ -89,6 +104,7 @@ export default function App() {
             inputRef={marketNameRef}
             variant="standard"
           />
+          <TextField label="Supply" inputRef={supplyRef} variant="standard" />
           <Button variant="contained" onClick={onAddItemClick}>
             Add item to market
           </Button>
