@@ -1,0 +1,16 @@
+[programs.localnet]
+solana_escrow = "8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q"
+solana_escrow_ubuntu = "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
+solana_escrow_mac = "8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/michaelcurd/.config/solana/id.json"
+wallet_ubuntu = "/home/mike/.config/solana/id.json"
+wallet_mac = "/Users/michaelcurd/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
