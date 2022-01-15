@@ -75,6 +75,8 @@ export default function App() {
     }
   };
 
+  const marginRight = "2rem";
+
   return (
     <div className="App">
       <HeaderBar />
@@ -90,21 +92,26 @@ export default function App() {
         <div
           style={{
             display: "flex",
-            width: "50%",
-            justifyContent: "space-between",
           }}
         >
           <TextField
             label="Item Name"
             inputRef={itemNameRef}
             variant="standard"
+            style={{ marginRight }}
           />
           <TextField
             label="Market Name"
             inputRef={marketNameRef}
             variant="standard"
+            style={{ marginRight }}
           />
-          <TextField label="Supply" inputRef={supplyRef} variant="standard" />
+          <TextField
+            label="Supply"
+            inputRef={supplyRef}
+            variant="standard"
+            style={{ marginRight }}
+          />
           <Button variant="contained" onClick={onAddItemClick}>
             Add item to market
           </Button>
