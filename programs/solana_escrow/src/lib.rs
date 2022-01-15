@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 
-declare_id!("GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF");
+declare_id!("mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx");
 
 #[program]
 pub mod solana_escrow {
@@ -8,25 +9,16 @@ pub mod solana_escrow {
 
     pub fn create_item_account(
         ctx: Context<CreateItemAccount>,
-        mint_public_key: Pubkey,
         name: String,
         market: String,
     ) -> ProgramResult {
-        ctx.accounts.item_account.mint_public_key = mint_public_key;
-        ctx.accounts.item_account.name = name;
-        ctx.accounts.item_account.market = market;
+        // Create Item Account
+        let item_account = &mut ctx.accounts.item_account;
+        item_account.name = name;
+        item_account.market = market;
+        item_account.mint_public_key = ctx.accounts.mint_account.key();
         Ok(())
     }
-}
-
-// Instruction
-#[derive(Accounts)]
-pub struct CreateItemAccount<'info> {
-    #[account(init, payer = user, space = ItemAccount::LEN)]
-    pub item_account: Account<'info, ItemAccount>,
-    #[account(mut)]
-    pub user: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
 }
 
 // Account
@@ -47,4 +39,15 @@ const MARKET_NAME: usize = ITEM_NAME;
 
 impl ItemAccount {
     const LEN: usize = DISCRIMINATOR + MINT_PUBLIC_KEY + ITEM_NAME + MARKET_NAME;
+}
+
+// Instruction
+#[derive(Accounts)]
+pub struct CreateItemAccount<'info> {
+    #[account(init, payer = user, space = ItemAccount::LEN)]
+    pub item_account: Account<'info, ItemAccount>,
+    pub mint_account: Account<'info, Mint>,
+    #[account(mut)]
+    pub user: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
 }

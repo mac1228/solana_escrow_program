@@ -11,6 +11,11 @@
           "isSigner": true
         },
         {
+          "name": "mintAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "user",
           "isMut": true,
           "isSigner": false
@@ -22,10 +27,6 @@
         }
       ],
       "args": [
-        {
-          "name": "mintPublicKey",
-          "type": "publicKey"
-        },
         {
           "name": "name",
           "type": "string"
@@ -60,6 +61,6 @@
     }
   ],
   "metadata": {
-    "address": "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
+    "address": "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
   }
 }

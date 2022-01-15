@@ -1,5 +1,5 @@
 import * as anchor from '@project-serum/anchor';
-import { Program } from '@project-serum/anchor';
+import { Program, web3 } from '@project-serum/anchor';
 import { SolanaEscrow } from '../target/types/solana_escrow';
 import { createAccountRentExempt, createMintAndVault, createTokenAccount, getMintInfo, getTokenAccount } from '@project-serum/common';
 import { transfer, mintTo } from '@project-serum/serum/lib/token-instructions';
@@ -10,18 +10,18 @@ describe('solana_escrow', () => {
   anchor.setProvider(provider);
   const program = (anchor as any).workspace.SolanaEscrow as Program<SolanaEscrow>;
 
-  const itemAccount = anchor.web3.Keypair.generate();
-
-  it("Creates item account", async () => {    
-    const initialTokenSupply = new anchor.BN(200);
-    const [mintPublicKey] = await createMintAndVault(provider, initialTokenSupply);
+  it("Creates item account", async () => { 
+    const itemAccount = web3.Keypair.generate();   
     const name = "Apples";
     const market = "Fruit";
+    const supply = new anchor.BN(200);
+    const [mintPublicKey] = await createMintAndVault(provider, supply);
 
     // Make rpc request to Solana program to create Item account for Apples in the Fruit market
-    await program.rpc.createItemAccount(mintPublicKey, name, market, {
+    await program.rpc.createItemAccount(name, market, {
       accounts: {
         itemAccount: itemAccount.publicKey,
+        mintAccount: mintPublicKey,
         user: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       },
@@ -31,11 +31,13 @@ describe('solana_escrow', () => {
     // fetch newly created item account
     const account = await program.account.itemAccount.fetch(itemAccount.publicKey);
 
-    // assert that account name is "Apples"
+    // assert that item account has correct values
     assert.ok(account.name === name);
+    assert.ok(account.market === market);
+    assert.ok(account.mintPublicKey.equals(mintPublicKey));
   });
 
-  it("Creates new token", async () => {
+  it("Creates new token on client", async () => {
     // Create new mint account and mint some tokens
     const initialTokenSupply = new anchor.BN(200);
     const [mintPublicKey, vaultPublicKey] = await createMintAndVault(provider, initialTokenSupply);

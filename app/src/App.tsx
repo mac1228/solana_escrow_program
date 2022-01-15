@@ -7,14 +7,7 @@ import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Button, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { HeaderBar } from "Components";
-import {
-  createAccountRentExempt,
-  createMintAndVault,
-  createTokenAccount,
-  getMintInfo,
-  getTokenAccount,
-} from "@project-serum/common";
-import { transfer, mintTo } from "@project-serum/serum/lib/token-instructions";
+import { createMintAndVault } from "@project-serum/common";
 
 export default function App() {
   const opts: web3.ConfirmOptions = {
@@ -38,33 +31,23 @@ export default function App() {
 
   const onAddItemClick = async () => {
     const itemName = itemNameRef.current?.value;
-    const marketName = marketNameRef.current?.value;
+    const itemMarket = marketNameRef.current?.value;
     const supply = supplyRef.current?.value;
-    if (itemName && marketName && supply) {
+    if (itemName && itemMarket && supply) {
       try {
-        const initialTokenSupply = new anchor.BN(supply);
-        const [mintPublicKey, vaultPublicKey] = await createMintAndVault(
-          provider,
-          initialTokenSupply
-        );
-
-        if (mintPublicKey && itemName && marketName) {
-          const itemAccount = web3.Keypair.generate();
-          await program.rpc.createItemAccount(
-            mintPublicKey,
-            itemName,
-            marketName,
-            {
-              accounts: {
-                itemAccount: itemAccount.publicKey,
-                user: provider.wallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
-              },
-              signers: [itemAccount],
-            }
-          );
-          enqueueSnackbar("Created Item account", { variant: "success" });
-        }
+        const itemAccount = web3.Keypair.generate();
+        const itemSupply = new anchor.BN(supply);
+        const [mintPublicKey] = await createMintAndVault(provider, itemSupply);
+        await program.rpc.createItemAccount(itemName, itemMarket, {
+          accounts: {
+            itemAccount: itemAccount.publicKey,
+            mintAccount: mintPublicKey,
+            user: provider.wallet.publicKey,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [itemAccount],
+        });
+        enqueueSnackbar("Created Item account", { variant: "success" });
       } catch (err) {
         enqueueSnackbar("Failed to create Item account", { variant: "error" });
       }
