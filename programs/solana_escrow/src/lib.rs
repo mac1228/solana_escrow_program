@@ -12,6 +12,12 @@ pub mod solana_escrow {
         name: String,
         market: String,
     ) -> ProgramResult {
+        if name.chars().count() > 50 {
+            return Err(ErrorCode::ItemNameTooLong.into());
+        }
+        if market.chars().count() > 50 {
+            return Err(ErrorCode::MarketNameTooLong.into());
+        }
         // Create Item Account
         let item_account = &mut ctx.accounts.item_account;
         item_account.name = name;
@@ -50,4 +56,13 @@ pub struct CreateItemAccount<'info> {
     #[account(mut)]
     pub user: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
+}
+
+// Errors
+#[error]
+pub enum ErrorCode {
+    #[msg("The item name is too long")]
+    ItemNameTooLong,
+    #[msg("The market name is too long")]
+    MarketNameTooLong,
 }

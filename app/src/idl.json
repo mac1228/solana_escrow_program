@@ -60,6 +60,18 @@
       }
     }
   ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ItemNameTooLong",
+      "msg": "The item name is too long"
+    },
+    {
+      "code": 6001,
+      "name": "MarketNameTooLong",
+      "msg": "The market name is too long"
+    }
+  ],
   "metadata": {
     "address": "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
   }
