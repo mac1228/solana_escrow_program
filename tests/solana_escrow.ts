@@ -82,6 +82,27 @@ describe('solana_escrow', () => {
     assert.ok(account.mintPublicKey.equals(mintAccount.publicKey));
   });
 
+  it("Cannot create item account with long item name", async () => {
+    const itemAccount = web3.Keypair.generate();   
+    const name = "X".repeat(50);
+    const market = "Fruit";
+    const [mint] = await createMintAndVault(provider, new anchor.BN(20));
+
+    try {
+      await program.rpc.createItemAccount(name, market, {
+        accounts: {
+          itemAccount: itemAccount.publicKey,
+          mintAccount: mint,
+          user: provider.wallet.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [itemAccount]
+      });
+    } catch (error) {
+      assert.equal(error.msg, "The item name is too long");
+    }
+  })
+
   it("Creates new token on client", async () => {
     // Create new mint account and mint some tokens
     const initialTokenSupply = new anchor.BN(200);
