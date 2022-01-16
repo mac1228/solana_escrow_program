@@ -2,7 +2,7 @@ import * as anchor from '@project-serum/anchor';
 import { Program, web3 } from '@project-serum/anchor';
 import { SolanaEscrow } from '../target/types/solana_escrow';
 import { createAccountRentExempt, createMintAndVault, createTokenAccount, getMintInfo, getTokenAccount } from '@project-serum/common';
-import { transfer, mintTo } from '@project-serum/serum/lib/token-instructions';
+import { TokenInstructions} from '@project-serum/serum';
 import * as assert from "assert";
 
 describe('solana_escrow', () => {
@@ -15,26 +15,71 @@ describe('solana_escrow', () => {
     const name = "Apples";
     const market = "Fruit";
     const supply = new anchor.BN(200);
-    const [mintPublicKey] = await createMintAndVault(provider, supply);
+    const mintAccount = web3.Keypair.generate();
+    const tokenAccount = web3.Keypair.generate();
 
-    // Make rpc request to Solana program to create Item account for Apples in the Fruit market
-    await program.rpc.createItemAccount(name, market, {
-      accounts: {
-        itemAccount: itemAccount.publicKey,
-        mintAccount: mintPublicKey,
-        user: provider.wallet.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
-      signers: [itemAccount]
-    });
+    // Create transaction
+    const tx = new web3.Transaction();
 
-    // fetch newly created item account
+    // Add instructions to create mint account, create token account, and mint to token account
+    tx.add(
+      web3.SystemProgram.createAccount({
+        fromPubkey: provider.wallet.publicKey,
+        newAccountPubkey: mintAccount.publicKey,
+        space: 82,
+        lamports: await provider.connection.getMinimumBalanceForRentExemption(82),
+        programId: TokenInstructions.TOKEN_PROGRAM_ID,
+      }),
+      TokenInstructions.initializeMint({
+        mint: mintAccount.publicKey,
+        decimals: 0,
+        mintAuthority: provider.wallet.publicKey,
+      }),
+      web3.SystemProgram.createAccount({
+        fromPubkey: provider.wallet.publicKey,
+        newAccountPubkey: tokenAccount.publicKey,
+        space: 165,
+        lamports: await provider.connection.getMinimumBalanceForRentExemption(
+          165,
+        ),
+        programId: TokenInstructions.TOKEN_PROGRAM_ID,
+      }),
+      TokenInstructions.initializeAccount({
+        account: tokenAccount.publicKey,
+        mint: mintAccount.publicKey,
+        owner: provider.wallet.publicKey,
+      }),
+      TokenInstructions.mintTo({
+        mint: mintAccount.publicKey,
+        destination: tokenAccount.publicKey,
+        amount: supply,
+        mintAuthority: provider.wallet.publicKey,
+      }),
+    );
+
+    // Add instruction to create item account
+    tx.add(
+      program.instruction.createItemAccount(name, market, {
+        accounts: {
+          itemAccount: itemAccount.publicKey,
+          mintAccount: mintAccount.publicKey,
+          user: provider.wallet.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [itemAccount]
+      })
+    );
+
+    // Send transaction
+    await provider.send(tx, [mintAccount, tokenAccount, itemAccount]);
+
+    // Fetch item account
     const account = await program.account.itemAccount.fetch(itemAccount.publicKey);
 
     // assert that item account has correct values
     assert.ok(account.name === name);
     assert.ok(account.market === market);
-    assert.ok(account.mintPublicKey.equals(mintPublicKey));
+    assert.ok(account.mintPublicKey.equals(mintAccount.publicKey));
   });
 
   it("Creates new token on client", async () => {
@@ -45,18 +90,18 @@ describe('solana_escrow', () => {
     let mintInfo = await getMintInfo(provider, mintPublicKey);
     assert.ok(mintInfo.supply.eq(initialTokenSupply));
     // Create new System Program account
-    const newAccount = await createAccountRentExempt(provider, anchor.web3.SystemProgram.programId, 0);
+    const newAccount = await createAccountRentExempt(provider, web3.SystemProgram.programId, 0);
     // Create token account for this new account
     const tokenAccountPublicKey = await createTokenAccount(provider, mintPublicKey, newAccount.publicKey);
     // Transfer tokens to this new token account
     const tokenTransferAmount = new anchor.BN(40);
-    const instruction = transfer({
+    const instruction = TokenInstructions.transfer({
       source: vaultPublicKey,
       destination: tokenAccountPublicKey,
       amount: tokenTransferAmount,
       owner: provider.wallet.publicKey,
     });
-    const tx = new anchor.web3.Transaction();
+    const tx = new web3.Transaction();
     tx.add(instruction);
     await provider.send(tx);
     // Check token supply
@@ -71,13 +116,13 @@ describe('solana_escrow', () => {
 
     // Mint to other account
     const mintAmount = new anchor.BN(60);
-    const mintInstruction = mintTo({
+    const mintInstruction = TokenInstructions.mintTo({
       mint: mintPublicKey,
       destination: tokenAccountPublicKey,
       amount: mintAmount,
       mintAuthority: provider.wallet.publicKey,
     });
-    const mintTransaction = new anchor.web3.Transaction();
+    const mintTransaction = new web3.Transaction();
     mintTransaction.add(mintInstruction);
     await provider.send(mintTransaction);
     // Check token supply
