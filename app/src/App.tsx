@@ -7,7 +7,7 @@ import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Button, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { HeaderBar } from "Components";
-import { createMintAndVault } from "@project-serum/common";
+import { TokenInstructions } from "@project-serum/serum";
 
 export default function App() {
   const opts: web3.ConfirmOptions = {
@@ -35,18 +35,65 @@ export default function App() {
     const supply = supplyRef.current?.value;
     if (itemName && itemMarket && supply) {
       try {
+        // Create keypairs for all accounts you'll be creating
         const itemAccount = web3.Keypair.generate();
-        const itemSupply = new anchor.BN(supply);
-        const [mintPublicKey] = await createMintAndVault(provider, itemSupply);
-        await program.rpc.createItemAccount(itemName, itemMarket, {
-          accounts: {
-            itemAccount: itemAccount.publicKey,
-            mintAccount: mintPublicKey,
-            user: provider.wallet.publicKey,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [itemAccount],
-        });
+        const mintAccount = web3.Keypair.generate();
+        const tokenAccount = web3.Keypair.generate();
+
+        // Create transaction
+        const tx = new web3.Transaction();
+
+        // Add instructions to create mint account, create token account, and mint to token account
+        tx.add(
+          web3.SystemProgram.createAccount({
+            fromPubkey: provider.wallet.publicKey,
+            newAccountPubkey: mintAccount.publicKey,
+            space: 82,
+            lamports:
+              await provider.connection.getMinimumBalanceForRentExemption(82),
+            programId: TokenInstructions.TOKEN_PROGRAM_ID,
+          }),
+          TokenInstructions.initializeMint({
+            mint: mintAccount.publicKey,
+            decimals: 0,
+            mintAuthority: provider.wallet.publicKey,
+          }),
+          web3.SystemProgram.createAccount({
+            fromPubkey: provider.wallet.publicKey,
+            newAccountPubkey: tokenAccount.publicKey,
+            space: 165,
+            lamports:
+              await provider.connection.getMinimumBalanceForRentExemption(165),
+            programId: TokenInstructions.TOKEN_PROGRAM_ID,
+          }),
+          TokenInstructions.initializeAccount({
+            account: tokenAccount.publicKey,
+            mint: mintAccount.publicKey,
+            owner: provider.wallet.publicKey,
+          }),
+          TokenInstructions.mintTo({
+            mint: mintAccount.publicKey,
+            destination: tokenAccount.publicKey,
+            amount: supply,
+            mintAuthority: provider.wallet.publicKey,
+          })
+        );
+
+        // Add instruction to create item account
+        tx.add(
+          program.instruction.createItemAccount(itemName, itemMarket, {
+            accounts: {
+              itemAccount: itemAccount.publicKey,
+              mintAccount: mintAccount.publicKey,
+              user: provider.wallet.publicKey,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [itemAccount],
+          })
+        );
+
+        // Send transaction
+        await provider.send(tx, [mintAccount, tokenAccount, itemAccount]);
         enqueueSnackbar("Created Item account", { variant: "success" });
       } catch (err) {
         enqueueSnackbar("Failed to create Item account", { variant: "error" });
