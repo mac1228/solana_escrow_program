@@ -6,7 +6,7 @@ import idl from "./idl.json";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Grid } from "@mui/material";
 
-import { HeaderBar, AddItemsForm } from "Components";
+import { HeaderBar, AddItemsForm, Item } from "Components";
 import { getAllItemAccounts } from "Helper";
 import { ItemAccount } from "Classes";
 
@@ -58,17 +58,15 @@ export default function App() {
           program={program}
           provider={provider}
         />
-        <Grid container>
+        <Grid
+          style={{ width: "95%" }}
+          container
+          spacing={2}
+          justifyContent={"flex-start"}
+        >
           {itemAccounts?.map((item) => (
-            <Grid
-              item
-              xs={6}
-              md={4}
-              lg={2}
-              justifyContent={"center"}
-              key={item.itemPublicKey.toBase58()}
-            >
-              <div style={{ textAlign: "center" }}>{item.name}</div>
+            <Grid item xs={6} lg={4} key={item.itemPublicKey.toBase58()}>
+              <Item item={item} />
             </Grid>
           ))}
         </Grid>

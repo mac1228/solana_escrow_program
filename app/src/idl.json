@@ -55,6 +55,10 @@
           {
             "name": "market",
             "type": "string"
+          },
+          {
+            "name": "seller",
+            "type": "publicKey"
           }
         ]
       }

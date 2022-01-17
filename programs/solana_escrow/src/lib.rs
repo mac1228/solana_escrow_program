@@ -23,6 +23,7 @@ pub mod solana_escrow {
         item_account.name = name;
         item_account.market = market;
         item_account.mint_public_key = ctx.accounts.mint_account.key();
+        item_account.seller = ctx.accounts.user.key();
         Ok(())
     }
 }
@@ -33,6 +34,7 @@ pub struct ItemAccount {
     mint_public_key: Pubkey,
     name: String,
     market: String,
+    seller: Pubkey,
 }
 
 const DISCRIMINATOR: usize = 8;
@@ -42,9 +44,11 @@ const POSSIBLE_NUM_OF_CHARS: usize = 50;
 const CHAR_SIZE: usize = 8;
 const ITEM_NAME: usize = VEC_PREFIX + (POSSIBLE_NUM_OF_CHARS * CHAR_SIZE);
 const MARKET_NAME: usize = ITEM_NAME;
+const SELLER_PUBLIC_KEY: usize = 32;
 
 impl ItemAccount {
-    const LEN: usize = DISCRIMINATOR + MINT_PUBLIC_KEY + ITEM_NAME + MARKET_NAME;
+    const LEN: usize =
+        DISCRIMINATOR + MINT_PUBLIC_KEY + ITEM_NAME + MARKET_NAME + SELLER_PUBLIC_KEY;
 }
 
 // Instruction

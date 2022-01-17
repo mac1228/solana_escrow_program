@@ -91,6 +91,11 @@ describe("solana_escrow", () => {
     assert.ok(account.name === name);
     assert.ok(account.market === market);
     assert.ok(account.mintPublicKey.equals(mintAccount.publicKey));
+    console.log("seller: " + account.seller.toBase58());
+    console.log("wallet: " + provider.wallet.publicKey.toBase58());
+    assert.ok(
+      account.seller.toBase58() === provider.wallet.publicKey.toBase58()
+    );
   });
 
   it("Cannot create item account with long item name", async () => {

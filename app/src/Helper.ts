@@ -84,6 +84,7 @@ export const getAllItemAccounts = async (
       mintPublicKey: item.account.mintPublicKey,
       name: item.account.name,
       market: item.account.market,
+      seller: item.account.seller,
     };
     return new ItemAccount(item.publicKey, account);
   });
