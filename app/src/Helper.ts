@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import { TokenInstructions } from "@project-serum/serum";
-import { ItemAccount, IItemAccount } from "ItemAccount";
+import { ItemAccount, IItemAccount } from "Classes";
 
 export const createItemAccount = async (
   provider: anchor.Provider,
