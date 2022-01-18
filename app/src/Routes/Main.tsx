@@ -4,8 +4,7 @@ import { web3 } from "@project-serum/anchor";
 import idl from "../idl.json";
 import { Grid } from "@mui/material";
 import { HeaderBar, AddItemsForm, Item } from "Components";
-import { getAllItemAccounts } from "Helper";
-import { EscrowContext } from "Helper";
+import { getAllItemAccounts, EscrowContext } from "Helper";
 
 export function Main() {
   const {
