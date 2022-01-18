@@ -11,13 +11,13 @@ interface IItem {
 
 export function Item(props: IItem) {
   const {
-    item: { name, market, seller },
+    item: { name, market, seller, itemPublicKey },
     provider,
   } = props;
   const navigate = useNavigate();
 
   const onTradeClick = () => {
-    navigate("/trade");
+    navigate(`/trade/${itemPublicKey.toBase58()}`);
   };
 
   return (

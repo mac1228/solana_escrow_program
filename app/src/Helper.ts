@@ -1,7 +1,9 @@
+import React from "react";
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import { TokenInstructions } from "@project-serum/serum";
 import { ItemAccount, IItemAccount } from "Classes";
+import { AnchorWallet } from "@solana/wallet-adapter-react";
 
 export const createItemAccount = async (
   provider: anchor.Provider,
@@ -81,12 +83,32 @@ export const getAllItemAccounts = async (
   console.log(allItems);
   const allItemAccounts = allItems.map((item) => {
     const account: IItemAccount = {
+      itemPublicKey: item.publicKey,
       mintPublicKey: item.account.mintPublicKey,
       name: item.account.name,
       market: item.account.market,
       seller: item.account.seller,
     };
-    return new ItemAccount(item.publicKey, account);
+    return new ItemAccount(account);
   });
   setItemAccounts(allItemAccounts);
 };
+
+export interface IEscrowContext {
+  wallet?: AnchorWallet;
+  network: string;
+  program?: anchor.Program<anchor.Idl>;
+  setProgram: React.Dispatch<
+    React.SetStateAction<anchor.Program<anchor.Idl> | undefined>
+  >;
+  provider?: anchor.Provider;
+  setProvider: React.Dispatch<
+    React.SetStateAction<anchor.Provider | undefined>
+  >;
+  itemAccounts?: ItemAccount[];
+  setItemAccounts: React.Dispatch<
+    React.SetStateAction<ItemAccount[] | undefined>
+  >;
+}
+
+export const EscrowContext = React.createContext({} as IEscrowContext);

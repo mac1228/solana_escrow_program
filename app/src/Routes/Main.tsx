@@ -1,19 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import idl from "../idl.json";
-import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Grid } from "@mui/material";
 import { HeaderBar, AddItemsForm, Item } from "Components";
 import { getAllItemAccounts } from "Helper";
-import { ItemAccount } from "Classes";
+import { EscrowContext } from "Helper";
 
 export function Main() {
-  const wallet = useAnchorWallet();
-  const network = "http://127.0.0.1:8899";
-  const [program, setProgram] = useState<anchor.Program>();
-  const [provider, setProvider] = useState<anchor.Provider>();
-  const [itemAccounts, setItemAccounts] = useState<ItemAccount[]>();
+  const {
+    wallet,
+    network,
+    setProvider,
+    setProgram,
+    program,
+    setItemAccounts,
+    provider,
+    itemAccounts,
+  } = React.useContext(EscrowContext);
 
   useEffect(() => {
     if (wallet) {
@@ -31,23 +35,22 @@ export function Main() {
       setProvider(provider);
       setProgram(program);
     }
-  }, [wallet]);
+  }, [wallet, network, setProgram, setProvider]);
 
   useEffect(() => {
     if (program) {
       getAllItemAccounts(program, setItemAccounts);
     }
-  }, [program]);
+  }, [program, setItemAccounts]);
 
   return (
-    <div>
+    <>
       <HeaderBar />
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          marginTop: "2rem",
         }}
       >
         <h1>Add your items to the market!</h1>
@@ -70,6 +73,6 @@ export function Main() {
           ))}
         </Grid>
       </div>
-    </div>
+    </>
   );
 }
