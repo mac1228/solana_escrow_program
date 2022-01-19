@@ -31,7 +31,8 @@ export function Item(props: IItem) {
     >
       <div>{`Item: ${name}`}</div>
       <div>{`Market: ${market}`}</div>
-      <div>{`Seller: ${seller.toBase58()}`}</div>
+      <div>Seller:</div>
+      <div>{seller.toBase58()}</div>
       {provider &&
       seller.toBase58() !== provider.wallet.publicKey.toBase58() ? (
         <Button
