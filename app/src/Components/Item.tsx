@@ -1,23 +1,20 @@
 import React from "react";
-import { IItemAccount } from "Classes";
+import { ItemAccount } from "Classes";
 import { Provider } from "@project-serum/anchor";
 import { Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 interface IItem {
-  item: IItemAccount;
+  item: ItemAccount;
   provider?: Provider;
 }
 
 export function Item(props: IItem) {
-  const {
-    item: { name, market, seller, itemPublicKey },
-    provider,
-  } = props;
+  const { item, provider } = props;
   const navigate = useNavigate();
 
   const onTradeClick = () => {
-    navigate(`/trade/${itemPublicKey.toBase58()}`);
+    navigate(`/trade/${item.getItemPublicKey().toBase58()}`);
   };
 
   return (
@@ -29,12 +26,12 @@ export function Item(props: IItem) {
         border: "2px white solid",
       }}
     >
-      <div>{`Item: ${name}`}</div>
-      <div>{`Market: ${market}`}</div>
+      <div>{`Item: ${item.getName()}`}</div>
+      <div>{`Market: ${item.getMarket()}`}</div>
       <div>Seller:</div>
-      <div>{seller.toBase58()}</div>
+      <div>{item.getSeller().toBase58()}</div>
       {provider &&
-      seller.toBase58() !== provider.wallet.publicKey.toBase58() ? (
+      item.getSeller().toBase58() !== provider.wallet.publicKey.toBase58() ? (
         <Button
           style={{ margin: ".5rem" }}
           variant={"contained"}

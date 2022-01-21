@@ -29,6 +29,7 @@ pub mod solana_escrow {
         item_account.market = market;
         item_account.mint_public_key = ctx.accounts.mint_account.key();
         item_account.seller = ctx.accounts.user.key();
+        item_account.token_account_public_key = ctx.accounts.associated_token_account.key();
 
         // Mint to associated token account
         let token_program = ctx.accounts.token_program.to_account_info();
@@ -48,6 +49,7 @@ pub mod solana_escrow {
 #[account]
 pub struct ItemAccount {
     mint_public_key: Pubkey,
+    token_account_public_key: Pubkey,
     name: String,
     market: String,
     seller: Pubkey,
@@ -55,6 +57,7 @@ pub struct ItemAccount {
 
 const DISCRIMINATOR: usize = 8;
 const MINT_PUBLIC_KEY: usize = 32;
+const TOKEN_ACCOUNT_PUBLIC_KEY: usize = 32;
 const VEC_PREFIX: usize = 4;
 const POSSIBLE_NUM_OF_CHARS: usize = 50;
 const CHAR_SIZE: usize = 8;
@@ -63,8 +66,12 @@ const MARKET_NAME: usize = ITEM_NAME;
 const SELLER_PUBLIC_KEY: usize = 32;
 
 impl ItemAccount {
-    const LEN: usize =
-        DISCRIMINATOR + MINT_PUBLIC_KEY + ITEM_NAME + MARKET_NAME + SELLER_PUBLIC_KEY;
+    const LEN: usize = DISCRIMINATOR
+        + MINT_PUBLIC_KEY
+        + TOKEN_ACCOUNT_PUBLIC_KEY
+        + ITEM_NAME
+        + MARKET_NAME
+        + SELLER_PUBLIC_KEY;
 }
 
 // Instruction

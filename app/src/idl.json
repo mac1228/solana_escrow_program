@@ -73,6 +73,10 @@
             "type": "publicKey"
           },
           {
+            "name": "tokenAccountPublicKey",
+            "type": "publicKey"
+          },
+          {
             "name": "name",
             "type": "string"
           },

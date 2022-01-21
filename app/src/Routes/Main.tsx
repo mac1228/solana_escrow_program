@@ -66,7 +66,7 @@ export function Main() {
           alignItems={"center"}
         >
           {itemAccounts?.map((item) => (
-            <Grid item xs={6} lg={4} key={item.itemPublicKey.toBase58()}>
+            <Grid item xs={6} lg={4} key={item.getItemPublicKey().toBase58()}>
               <Item item={item} provider={provider} />
             </Grid>
           ))}

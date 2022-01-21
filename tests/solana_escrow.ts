@@ -50,16 +50,20 @@ describe("solana_escrow", () => {
     });
 
     // Fetch item account
-    const account = await program.account.itemAccount.fetch(
+    const fetchedItemAccount = await program.account.itemAccount.fetch(
       itemAccount.publicKey
     );
 
     // assert that item account has correct values
-    assert.ok(account.name === name);
-    assert.ok(account.market === market);
-    assert.ok(account.mintPublicKey.equals(mintAccount.publicKey));
+    assert.ok(fetchedItemAccount.name === name);
+    assert.ok(fetchedItemAccount.market === market);
+    assert.ok(fetchedItemAccount.mintPublicKey.equals(mintAccount.publicKey));
     assert.ok(
-      account.seller.toBase58() === provider.wallet.publicKey.toBase58()
+      fetchedItemAccount.tokenAccountPublicKey.equals(tokenAccountPublicKey)
+    );
+    assert.ok(
+      fetchedItemAccount.seller.toBase58() ===
+        provider.wallet.publicKey.toBase58()
     );
 
     // Fetch token account info

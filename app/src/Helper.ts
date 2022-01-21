@@ -52,6 +52,7 @@ export const getAllItemAccounts = async (
     const account: IItemAccount = {
       itemPublicKey: item.publicKey,
       mintPublicKey: item.account.mintPublicKey,
+      tokenAccountPublicKey: item.account.tokenAccountPublicKey,
       name: item.account.name,
       market: item.account.market,
       seller: item.account.seller,
