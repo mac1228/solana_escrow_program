@@ -23,7 +23,10 @@ export function Item(props: IItem) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: "center",
         border: "2px white solid",
+        height: "10rem",
+        position: "relative",
       }}
     >
       <div>{`Item: ${item.getName()}`}</div>
@@ -33,7 +36,12 @@ export function Item(props: IItem) {
       {provider &&
       item.getSeller().toBase58() !== provider.wallet.publicKey.toBase58() ? (
         <Button
-          style={{ margin: ".5rem" }}
+          style={{
+            margin: ".5rem",
+            position: "absolute",
+            right: "0",
+            top: "0",
+          }}
           variant={"contained"}
           onClick={onTradeClick}
         >
