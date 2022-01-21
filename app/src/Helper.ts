@@ -1,9 +1,13 @@
 import React from "react";
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
-import { TokenInstructions } from "@project-serum/serum";
 import { ItemAccount, IItemAccount } from "Classes";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  Token,
+} from "@solana/spl-token";
 
 export const createItemAccount = async (
   provider: anchor.Provider,
@@ -12,65 +16,28 @@ export const createItemAccount = async (
   itemMarket: string,
   supply: anchor.BN
 ) => {
-  // Create keypairs for all accounts you'll be creating
   const itemAccount = web3.Keypair.generate();
   const mintAccount = web3.Keypair.generate();
-  const tokenAccount = web3.Keypair.generate();
-
-  // Create transaction
-  const tx = new web3.Transaction();
-
-  // Add instructions to create mint account, create token account, and mint to token account
-  tx.add(
-    web3.SystemProgram.createAccount({
-      fromPubkey: provider.wallet.publicKey,
-      newAccountPubkey: mintAccount.publicKey,
-      space: 82,
-      lamports: await provider.connection.getMinimumBalanceForRentExemption(82),
-      programId: TokenInstructions.TOKEN_PROGRAM_ID,
-    }),
-    TokenInstructions.initializeMint({
-      mint: mintAccount.publicKey,
-      decimals: 0,
-      mintAuthority: provider.wallet.publicKey,
-    }),
-    web3.SystemProgram.createAccount({
-      fromPubkey: provider.wallet.publicKey,
-      newAccountPubkey: tokenAccount.publicKey,
-      space: 165,
-      lamports: await provider.connection.getMinimumBalanceForRentExemption(
-        165
-      ),
-      programId: TokenInstructions.TOKEN_PROGRAM_ID,
-    }),
-    TokenInstructions.initializeAccount({
-      account: tokenAccount.publicKey,
-      mint: mintAccount.publicKey,
-      owner: provider.wallet.publicKey,
-    }),
-    TokenInstructions.mintTo({
-      mint: mintAccount.publicKey,
-      destination: tokenAccount.publicKey,
-      amount: supply,
-      mintAuthority: provider.wallet.publicKey,
-    })
+  const tokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    mintAccount.publicKey,
+    provider.wallet.publicKey
   );
 
-  // Add instruction to create item account
-  tx.add(
-    program.instruction.createItemAccount(itemName, itemMarket, {
-      accounts: {
-        itemAccount: itemAccount.publicKey,
-        mintAccount: mintAccount.publicKey,
-        user: provider.wallet.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      },
-      signers: [itemAccount],
-    })
-  );
-
-  // Send transaction
-  return provider.send(tx, [mintAccount, tokenAccount, itemAccount]);
+  return program.rpc.createItemAccount(itemName, itemMarket, supply, {
+    accounts: {
+      itemAccount: itemAccount.publicKey,
+      mintAccount: mintAccount.publicKey,
+      associatedTokenAccount: tokenAccountPublicKey,
+      user: provider.wallet.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    },
+    signers: [itemAccount, mintAccount],
+  });
 };
 
 export const getAllItemAccounts = async (

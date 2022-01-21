@@ -12,16 +12,36 @@
         },
         {
           "name": "mintAccount",
-          "isMut": false,
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "associatedTokenAccount",
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "user",
           "isMut": true,
-          "isSigner": false
+          "isSigner": true
         },
         {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         }
@@ -34,6 +54,10 @@
         {
           "name": "market",
           "type": "string"
+        },
+        {
+          "name": "supply",
+          "type": "u64"
         }
       ]
     }

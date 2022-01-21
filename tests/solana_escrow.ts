@@ -9,6 +9,11 @@ import {
   getTokenAccount,
 } from "@project-serum/common";
 import { TokenInstructions } from "@project-serum/serum";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  Token,
+} from "@solana/spl-token";
 import * as assert from "assert";
 
 describe("solana_escrow", () => {
@@ -23,64 +28,26 @@ describe("solana_escrow", () => {
     const market = "Fruit";
     const supply = new anchor.BN(200);
     const mintAccount = web3.Keypair.generate();
-    const tokenAccount = web3.Keypair.generate();
-
-    // Create transaction
-    const tx = new web3.Transaction();
-
-    // Add instructions to create mint account, create token account, and mint to token account
-    tx.add(
-      web3.SystemProgram.createAccount({
-        fromPubkey: provider.wallet.publicKey,
-        newAccountPubkey: mintAccount.publicKey,
-        space: 82,
-        lamports: await provider.connection.getMinimumBalanceForRentExemption(
-          82
-        ),
-        programId: TokenInstructions.TOKEN_PROGRAM_ID,
-      }),
-      TokenInstructions.initializeMint({
-        mint: mintAccount.publicKey,
-        decimals: 0,
-        mintAuthority: provider.wallet.publicKey,
-      }),
-      web3.SystemProgram.createAccount({
-        fromPubkey: provider.wallet.publicKey,
-        newAccountPubkey: tokenAccount.publicKey,
-        space: 165,
-        lamports: await provider.connection.getMinimumBalanceForRentExemption(
-          165
-        ),
-        programId: TokenInstructions.TOKEN_PROGRAM_ID,
-      }),
-      TokenInstructions.initializeAccount({
-        account: tokenAccount.publicKey,
-        mint: mintAccount.publicKey,
-        owner: provider.wallet.publicKey,
-      }),
-      TokenInstructions.mintTo({
-        mint: mintAccount.publicKey,
-        destination: tokenAccount.publicKey,
-        amount: supply,
-        mintAuthority: provider.wallet.publicKey,
-      })
+    const tokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      mintAccount.publicKey,
+      provider.wallet.publicKey
     );
 
-    // Add instruction to create item account
-    tx.add(
-      program.instruction.createItemAccount(name, market, {
-        accounts: {
-          itemAccount: itemAccount.publicKey,
-          mintAccount: mintAccount.publicKey,
-          user: provider.wallet.publicKey,
-          systemProgram: web3.SystemProgram.programId,
-        },
-        signers: [itemAccount],
-      })
-    );
-
-    // Send transaction
-    await provider.send(tx, [mintAccount, tokenAccount, itemAccount]);
+    await program.rpc.createItemAccount(name, market, supply, {
+      accounts: {
+        itemAccount: itemAccount.publicKey,
+        mintAccount: mintAccount.publicKey,
+        associatedTokenAccount: tokenAccountPublicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [itemAccount, mintAccount],
+    });
 
     // Fetch item account
     const account = await program.account.itemAccount.fetch(
@@ -91,10 +58,35 @@ describe("solana_escrow", () => {
     assert.ok(account.name === name);
     assert.ok(account.market === market);
     assert.ok(account.mintPublicKey.equals(mintAccount.publicKey));
-    console.log("seller: " + account.seller.toBase58());
-    console.log("wallet: " + provider.wallet.publicKey.toBase58());
     assert.ok(
       account.seller.toBase58() === provider.wallet.publicKey.toBase58()
+    );
+
+    // Fetch token account info
+    const tokenAccountInfo = await provider.connection.getParsedAccountInfo(
+      tokenAccountPublicKey
+    );
+    const tokenAccountData = (tokenAccountInfo.value.data as any).parsed.info;
+    const tokenOwner = tokenAccountData.owner;
+    const tokenMint = tokenAccountData.mint;
+    const tokenAmount = await provider.connection.getTokenAccountBalance(
+      tokenAccountPublicKey
+    );
+
+    // Assert token account info has correct values
+    assert.ok(provider.wallet.publicKey.toBase58() === tokenOwner);
+    assert.ok(mintAccount.publicKey.toBase58() === tokenMint);
+    assert.ok(tokenAmount.value.uiAmount === supply.toNumber());
+
+    // Get token using owner and mint
+    const tokenByOwnerAndMint =
+      await provider.connection.getParsedTokenAccountsByOwner(
+        provider.wallet.publicKey,
+        { mint: mintAccount.publicKey }
+      );
+    assert.ok(
+      tokenAccountPublicKey.toBase58() ===
+        (tokenByOwnerAndMint.value as any)[0].pubkey.toBase58()
     );
   });
 
@@ -102,17 +94,28 @@ describe("solana_escrow", () => {
     const itemAccount = web3.Keypair.generate();
     const name = "X".repeat(50);
     const market = "Fruit";
-    const [mint] = await createMintAndVault(provider, new anchor.BN(20));
+    const supply = new anchor.BN(200);
+    const mintAccount = web3.Keypair.generate();
+    const tokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      mintAccount.publicKey,
+      provider.wallet.publicKey
+    );
 
     try {
-      await program.rpc.createItemAccount(name, market, {
+      await program.rpc.createItemAccount(name, market, supply, {
         accounts: {
           itemAccount: itemAccount.publicKey,
-          mintAccount: mint,
+          mintAccount: mintAccount.publicKey,
+          associatedTokenAccount: tokenAccountPublicKey,
           user: provider.wallet.publicKey,
           systemProgram: web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
-        signers: [itemAccount],
+        signers: [itemAccount, mintAccount],
       });
     } catch (error) {
       assert.equal(error.msg, "The item name is too long");
