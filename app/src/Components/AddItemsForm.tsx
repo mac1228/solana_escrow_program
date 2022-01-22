@@ -50,7 +50,8 @@ export function AddItemsForm(props: IAddItemsForm) {
     <div
       style={{
         display: "flex",
-        marginBottom: "2rem",
+        marginTop: "1rem",
+        marginBottom: "4rem",
       }}
     >
       <TextField
