@@ -21,6 +21,7 @@ describe("solana_escrow", () => {
   anchor.setProvider(provider);
   const program = (anchor as any).workspace
     .SolanaEscrow as Program<SolanaEscrow>;
+  let tokenAccountPublicKey: web3.PublicKey;
 
   it("Creates item account", async () => {
     const itemAccount = web3.Keypair.generate();
@@ -28,7 +29,7 @@ describe("solana_escrow", () => {
     const market = "Fruit";
     const supply = new anchor.BN(200);
     const mintAccount = web3.Keypair.generate();
-    const tokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+    tokenAccountPublicKey = await Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
       mintAccount.publicKey,
@@ -124,6 +125,80 @@ describe("solana_escrow", () => {
     } catch (error) {
       assert.equal(error.msg, "The item name is too long");
     }
+  });
+
+  it("Creates offer and transfers tokens to vault account", async () => {
+    // Airdropping tokens to other account
+    const otherAccount = anchor.web3.Keypair.generate();
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(
+        otherAccount.publicKey,
+        10000000000
+      ),
+      "processed"
+    );
+
+    const itemAccount = web3.Keypair.generate();
+    const name = "Oranges";
+    const market = "Fruit";
+    const supply = new anchor.BN(100);
+    const mintAccount = web3.Keypair.generate();
+    const otherTokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      mintAccount.publicKey,
+      otherAccount.publicKey
+    );
+
+    await program.rpc.createItemAccount(name, market, supply, {
+      accounts: {
+        itemAccount: itemAccount.publicKey,
+        mintAccount: mintAccount.publicKey,
+        associatedTokenAccount: otherTokenAccountPublicKey,
+        user: otherAccount.publicKey,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [itemAccount, mintAccount, otherAccount],
+    });
+
+    const giveAmount = new anchor.BN(20);
+    const receiveAmount = new anchor.BN(50);
+    const offer = web3.Keypair.generate();
+    // const [vaultTokenAccountPublicKey, vaultBump] =
+    //   await web3.PublicKey.findProgramAddress(
+    //     [offer.publicKey.toBuffer()],
+    //     program.programId
+    //   );
+    const vaultTokenAccount = web3.Keypair.generate();
+
+    await program.rpc.createOffer(giveAmount, receiveAmount, {
+      accounts: {
+        initializer: otherAccount.publicKey,
+        offer: offer.publicKey,
+        intializerTokenAccount: otherTokenAccountPublicKey,
+        mint: mintAccount.publicKey,
+        vaultTokenAccount: vaultTokenAccount.publicKey,
+        takerTokenAccount: tokenAccountPublicKey,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [offer, vaultTokenAccount, otherAccount],
+    });
+
+    const fetchedOfferAccount = await program.account.offer.fetch(
+      offer.publicKey
+    );
+    assert.ok(fetchedOfferAccount.initializer.equals(otherAccount.publicKey));
+    assert.ok(fetchedOfferAccount.receiveAmount.eq(receiveAmount));
+
+    const vaultTokenAmount = await provider.connection.getTokenAccountBalance(
+      vaultTokenAccount.publicKey
+    );
+    assert.ok(vaultTokenAmount.value.uiAmount === giveAmount.toNumber());
   });
 
   it("Creates new token on client", async () => {

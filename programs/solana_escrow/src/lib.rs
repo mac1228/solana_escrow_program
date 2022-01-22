@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, Mint, MintTo, Token, TokenAccount},
+    token::{mint_to, transfer, Mint, MintTo, Transfer, Token, TokenAccount},
 };
 declare_id!("mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx");
 
@@ -43,9 +43,30 @@ pub mod solana_escrow {
 
         Ok(())
     }
+
+    pub fn create_offer(ctx: Context<CreateOffer>, give_amount: u64, receive_amount: u64) -> ProgramResult {
+        // Set values for Offer account
+        let offer = &mut ctx.accounts.offer;
+        offer.initializer = ctx.accounts.initializer.key();
+        offer.intializer_token_account = ctx.accounts.intializer_token_account.key();
+        offer.taker_token_account = ctx.accounts.taker_token_account.key();
+        offer.give_amount = give_amount;
+        offer.receive_amount = receive_amount;
+
+        // Transfer give amount to vault token account
+        let accounts = Transfer {
+            from: ctx.accounts.intializer_token_account.to_account_info(),
+            to: ctx.accounts.vault_token_account.to_account_info(),
+            authority: ctx.accounts.initializer.to_account_info(),
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        let cpi_context = CpiContext::new(token_program, accounts);
+        transfer(cpi_context, give_amount)?;
+        Ok(())
+    }
 }
 
-// Account
+// Item Account
 #[account]
 pub struct ItemAccount {
     mint_public_key: Pubkey,
@@ -74,7 +95,32 @@ impl ItemAccount {
         + SELLER_PUBLIC_KEY;
 }
 
-// Instruction
+// Offer Account
+#[account]
+pub struct Offer {
+    initializer: Pubkey,
+    intializer_token_account: Pubkey,
+    taker_token_account: Pubkey,
+    give_amount: u64,
+    receive_amount: u64,
+}
+
+const INITIALIZER_PUBLIC_KEY: usize = 32;
+const INITIALIZER_TOKEN_ACCOUNT: usize = 32;
+const TAKER_TOKEN_ACCOUNT: usize = 32;
+const GIVE_AMOUNT: usize = 8;
+const RECEIVE_AMOUNT: usize = 8;
+
+impl Offer {
+    const LEN: usize = DISCRIMINATOR 
+        + INITIALIZER_PUBLIC_KEY 
+        + INITIALIZER_TOKEN_ACCOUNT 
+        + TAKER_TOKEN_ACCOUNT 
+        + GIVE_AMOUNT 
+        + RECEIVE_AMOUNT;
+}
+
+// Instruction: Create Item
 #[derive(Accounts)]
 pub struct CreateItemAccount<'info> {
     #[account(init, payer = user, space = ItemAccount::LEN)]
@@ -88,6 +134,30 @@ pub struct CreateItemAccount<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+// Instruction: CreateOffer
+#[derive(Accounts)]
+pub struct CreateOffer<'info> {
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    #[account(init, payer = initializer, space = Offer::LEN)]
+    pub offer: Account<'info, Offer>,
+    #[account(mut, constraint = intializer_token_account.owner == initializer.key())]
+    pub intializer_token_account: Account<'info, TokenAccount>,
+    #[account(constraint = intializer_token_account.mint == mint.key())]
+    pub mint: Account<'info, Mint>,
+    #[account(
+        init, 
+        payer = initializer, 
+        token::mint = mint,
+        token::authority = vault_token_account
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+    pub taker_token_account: Account<'info, TokenAccount>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
 }
 
