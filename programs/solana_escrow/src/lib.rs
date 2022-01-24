@@ -48,14 +48,14 @@ pub mod solana_escrow {
         // Set values for Offer account
         let offer = &mut ctx.accounts.offer;
         offer.initializer = ctx.accounts.initializer.key();
-        offer.intializer_token_account = ctx.accounts.intializer_token_account.key();
+        offer.intializer_token_account = ctx.accounts.initializer_token_account.key();
         offer.taker_token_account = ctx.accounts.taker_token_account.key();
         offer.give_amount = give_amount;
         offer.receive_amount = receive_amount;
 
         // Transfer give amount to vault token account
         let accounts = Transfer {
-            from: ctx.accounts.intializer_token_account.to_account_info(),
+            from: ctx.accounts.initializer_token_account.to_account_info(),
             to: ctx.accounts.vault_token_account.to_account_info(),
             authority: ctx.accounts.initializer.to_account_info(),
         };
@@ -145,19 +145,27 @@ pub struct CreateOffer<'info> {
     pub initializer: Signer<'info>,
     #[account(
         init, 
-        seeds = [initializer.key.as_ref(), intializer_token_account.key().as_ref(), taker_token_account.key().as_ref()], 
+        seeds = [
+            initializer_token_account.key().as_ref(), 
+            give_amount.to_le_bytes().as_ref(), 
+            taker_token_account.key().as_ref(), 
+            receive_amount.to_le_bytes().as_ref()
+        ], 
         bump = offer_bump, 
         payer = initializer, 
         space = Offer::LEN
     )]
     pub offer: Account<'info, Offer>,
-    #[account(mut, constraint = intializer_token_account.owner == initializer.key())]
-    pub intializer_token_account: Account<'info, TokenAccount>,
-    #[account(constraint = intializer_token_account.mint == mint.key())]
+    #[account(mut, constraint = initializer_token_account.owner == initializer.key())]
+    pub initializer_token_account: Account<'info, TokenAccount>,
+    #[account(constraint = initializer_token_account.mint == mint.key())]
     pub mint: Account<'info, Mint>,
     #[account(
         init,
-        seeds = [initializer.key.as_ref(), mint.key().as_ref()],
+        seeds = [
+            initializer_token_account.key().as_ref(), 
+            taker_token_account.key().as_ref()
+        ],
         bump = vault_bump,
         payer = initializer, 
         token::mint = mint,

@@ -168,14 +168,15 @@ describe("solana_escrow", () => {
     const receiveAmount = new anchor.BN(50);
     const [offer, offerBump] = await web3.PublicKey.findProgramAddress(
       [
-        otherAccount.publicKey.toBuffer(),
         otherTokenAccountPublicKey.toBuffer(),
+        giveAmount.toBuffer("le", 8),
         tokenAccountPublicKey.toBuffer(),
+        receiveAmount.toBuffer("le", 8),
       ],
       program.programId
     );
     const [vault, vaultBump] = await web3.PublicKey.findProgramAddress(
-      [otherAccount.publicKey.toBuffer(), mintAccount.publicKey.toBuffer()],
+      [otherTokenAccountPublicKey.toBuffer(), tokenAccountPublicKey.toBuffer()],
       program.programId
     );
 
@@ -188,7 +189,7 @@ describe("solana_escrow", () => {
         accounts: {
           initializer: otherAccount.publicKey,
           offer: offer,
-          intializerTokenAccount: otherTokenAccountPublicKey,
+          initializerTokenAccount: otherTokenAccountPublicKey,
           mint: mintAccount.publicKey,
           vaultTokenAccount: vault,
           takerTokenAccount: tokenAccountPublicKey,
