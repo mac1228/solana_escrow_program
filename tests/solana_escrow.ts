@@ -166,37 +166,46 @@ describe("solana_escrow", () => {
 
     const giveAmount = new anchor.BN(20);
     const receiveAmount = new anchor.BN(50);
-    const offer = web3.Keypair.generate();
-    // const [vaultTokenAccountPublicKey, vaultBump] =
-    //   await web3.PublicKey.findProgramAddress(
-    //     [offer.publicKey.toBuffer()],
-    //     program.programId
-    //   );
-    const vaultTokenAccount = web3.Keypair.generate();
-
-    await program.rpc.createOffer(giveAmount, receiveAmount, {
-      accounts: {
-        initializer: otherAccount.publicKey,
-        offer: offer.publicKey,
-        intializerTokenAccount: otherTokenAccountPublicKey,
-        mint: mintAccount.publicKey,
-        vaultTokenAccount: vaultTokenAccount.publicKey,
-        takerTokenAccount: tokenAccountPublicKey,
-        systemProgram: web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-      signers: [offer, vaultTokenAccount, otherAccount],
-    });
-
-    const fetchedOfferAccount = await program.account.offer.fetch(
-      offer.publicKey
+    const [offer, offerBump] = await web3.PublicKey.findProgramAddress(
+      [
+        otherAccount.publicKey.toBuffer(),
+        otherTokenAccountPublicKey.toBuffer(),
+        tokenAccountPublicKey.toBuffer(),
+      ],
+      program.programId
     );
+    const [vault, vaultBump] = await web3.PublicKey.findProgramAddress(
+      [otherAccount.publicKey.toBuffer(), mintAccount.publicKey.toBuffer()],
+      program.programId
+    );
+
+    await program.rpc.createOffer(
+      giveAmount,
+      receiveAmount,
+      offerBump,
+      vaultBump,
+      {
+        accounts: {
+          initializer: otherAccount.publicKey,
+          offer: offer,
+          intializerTokenAccount: otherTokenAccountPublicKey,
+          mint: mintAccount.publicKey,
+          vaultTokenAccount: vault,
+          takerTokenAccount: tokenAccountPublicKey,
+          systemProgram: web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [otherAccount],
+      }
+    );
+
+    const fetchedOfferAccount = await program.account.offer.fetch(offer);
     assert.ok(fetchedOfferAccount.initializer.equals(otherAccount.publicKey));
     assert.ok(fetchedOfferAccount.receiveAmount.eq(receiveAmount));
 
     const vaultTokenAmount = await provider.connection.getTokenAccountBalance(
-      vaultTokenAccount.publicKey
+      vault
     );
     assert.ok(vaultTokenAmount.value.uiAmount === giveAmount.toNumber());
   });

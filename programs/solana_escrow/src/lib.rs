@@ -44,7 +44,7 @@ pub mod solana_escrow {
         Ok(())
     }
 
-    pub fn create_offer(ctx: Context<CreateOffer>, give_amount: u64, receive_amount: u64) -> ProgramResult {
+    pub fn create_offer(ctx: Context<CreateOffer>, give_amount: u64, receive_amount: u64, _offer_bump: u8, _vault_bump: u8) -> ProgramResult {
         // Set values for Offer account
         let offer = &mut ctx.accounts.offer;
         offer.initializer = ctx.accounts.initializer.key();
@@ -139,20 +139,29 @@ pub struct CreateItemAccount<'info> {
 
 // Instruction: CreateOffer
 #[derive(Accounts)]
+#[instruction(give_amount: u64, receive_amount: u64, offer_bump: u8, vault_bump: u8)]
 pub struct CreateOffer<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
-    #[account(init, payer = initializer, space = Offer::LEN)]
+    #[account(
+        init, 
+        seeds = [initializer.key.as_ref(), intializer_token_account.key().as_ref(), taker_token_account.key().as_ref()], 
+        bump = offer_bump, 
+        payer = initializer, 
+        space = Offer::LEN
+    )]
     pub offer: Account<'info, Offer>,
     #[account(mut, constraint = intializer_token_account.owner == initializer.key())]
     pub intializer_token_account: Account<'info, TokenAccount>,
     #[account(constraint = intializer_token_account.mint == mint.key())]
     pub mint: Account<'info, Mint>,
     #[account(
-        init, 
+        init,
+        seeds = [initializer.key.as_ref(), mint.key().as_ref()],
+        bump = vault_bump,
         payer = initializer, 
         token::mint = mint,
-        token::authority = vault_token_account
+        token::authority = offer
     )]
     pub vault_token_account: Account<'info, TokenAccount>,
     pub taker_token_account: Account<'info, TokenAccount>,
