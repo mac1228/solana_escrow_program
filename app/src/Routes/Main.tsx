@@ -53,11 +53,7 @@ export function Main() {
         }}
       >
         <h1>Add your items to the market!</h1>
-        <AddItemsForm
-          setItemAccounts={setItemAccounts}
-          program={program}
-          provider={provider}
-        />
+        <AddItemsForm />
         <Grid
           style={{ width: "95%" }}
           container

@@ -5,10 +5,15 @@ import { EscrowContext } from "Helper";
 import { useParams } from "react-router-dom";
 import { ItemAccount } from "Classes";
 import * as anchor from "@project-serum/anchor";
+import { web3 } from "@project-serum/anchor";
+import { useSnackbar } from "notistack";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 export function Trade() {
   const params = useParams();
-  const { itemAccounts, wallet, provider } = React.useContext(EscrowContext);
+  const { enqueueSnackbar } = useSnackbar();
+  const { itemAccounts, wallet, provider, program } =
+    React.useContext(EscrowContext);
   const [dropdownItemSelection, setDropdownItemSelection] =
     useState<string>("");
   const [giveAmount, setGiveAmount] = useState<0>(0);
@@ -36,6 +41,60 @@ export function Trade() {
 
   const handleReceiveAmountChange = (event: any) => {
     setReceiveAmount(event.target.value);
+  };
+
+  const onSubmitOfferClick = async () => {
+    try {
+      if (program && receiveItem && giveItem && provider) {
+        const giveAmountBN = new anchor.BN(giveAmount);
+        const receiveAmountBN = new anchor.BN(receiveAmount);
+        const [offer, offerBump] = await web3.PublicKey.findProgramAddress(
+          [
+            giveItem.getTokenAccountPublicKey().toBuffer(),
+            giveAmountBN.toArrayLike(Buffer, "le", 8),
+            receiveItem.getTokenAccountPublicKey().toBuffer(),
+            receiveAmountBN.toArrayLike(Buffer, "le", 8),
+          ],
+          program.programId
+        );
+        const [vault, vaultBump] = await web3.PublicKey.findProgramAddress(
+          [
+            giveItem.getTokenAccountPublicKey().toBuffer(),
+            receiveItem.getTokenAccountPublicKey().toBuffer(),
+          ],
+          program.programId
+        );
+
+        await program.rpc.createOffer(
+          giveAmountBN,
+          receiveAmountBN,
+          offerBump,
+          vaultBump,
+          {
+            accounts: {
+              initializer: provider.wallet.publicKey,
+              offer: offer,
+              initializerTokenAccount: giveItem.getTokenAccountPublicKey(),
+              mint: giveItem.getMintPublicKey(),
+              vaultTokenAccount: vault,
+              takerTokenAccount: receiveItem.getTokenAccountPublicKey(),
+              systemProgram: web3.SystemProgram.programId,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            },
+            signers: [],
+          }
+        );
+        enqueueSnackbar(
+          `Created Offer: ${giveAmount} ${giveItem.getName()} for ${receiveAmount} ${receiveItem.getName()}`,
+          { variant: "success" }
+        );
+      }
+    } catch (err: any) {
+      enqueueSnackbar(`Failed to submit offer: ${err.toString()}`, {
+        variant: "error",
+      });
+    }
   };
 
   useEffect(() => {
@@ -104,7 +163,9 @@ export function Trade() {
             style={{ marginBottom: "2rem" }}
             placeholder="Enter quantity"
           />
-          <Button variant="contained">Submit Offer</Button>
+          <Button variant="contained" onClick={onSubmitOfferClick}>
+            Submit Offer
+          </Button>
         </div>
       )}
     </>

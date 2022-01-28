@@ -1,5 +1,5 @@
 import React from "react";
-import { Toolbar, Typography, AppBar } from "@mui/material";
+import { Toolbar, Typography, AppBar, Button } from "@mui/material";
 import {
   WalletMultiButton,
   WalletDisconnectButton,
@@ -16,6 +16,10 @@ export function HeaderBar() {
     navigate("/");
   };
 
+  const onOffersClick = () => {
+    navigate("/offers");
+  };
+
   return (
     <AppBar position="static" style={{ marginBottom: " 2rem" }}>
       <Toolbar style={{ display: "flex" }}>
@@ -27,6 +31,13 @@ export function HeaderBar() {
         >
           Solana Escrow Program
         </Typography>
+        <Button
+          variant="contained"
+          onClick={onOffersClick}
+          style={{ marginRight: ".5rem" }}
+        >
+          Offers
+        </Button>
         <WalletMultiButton />
         {wallet && (
           <WalletDisconnectButton

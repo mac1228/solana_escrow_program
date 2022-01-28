@@ -48,7 +48,7 @@ pub mod solana_escrow {
         // Set values for Offer account
         let offer = &mut ctx.accounts.offer;
         offer.initializer = ctx.accounts.initializer.key();
-        offer.intializer_token_account = ctx.accounts.initializer_token_account.key();
+        offer.initializer_token_account = ctx.accounts.initializer_token_account.key();
         offer.taker_token_account = ctx.accounts.taker_token_account.key();
         offer.give_amount = give_amount;
         offer.receive_amount = receive_amount;
@@ -99,7 +99,7 @@ impl ItemAccount {
 #[account]
 pub struct Offer {
     initializer: Pubkey,
-    intializer_token_account: Pubkey,
+    initializer_token_account: Pubkey,
     taker_token_account: Pubkey,
     give_amount: u64,
     receive_amount: u64,

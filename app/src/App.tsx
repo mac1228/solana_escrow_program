@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Main, Trade } from "Routes";
+import { Main, Trade, Offers } from "Routes";
 import * as anchor from "@project-serum/anchor";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { ItemAccount } from "Classes";
@@ -29,6 +29,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/trade/:itemId" element={<Trade />} />
+          <Route path="/offers" element={<Offers />} />
           <Route path="*" element={<Main />} />
         </Routes>
       </BrowserRouter>

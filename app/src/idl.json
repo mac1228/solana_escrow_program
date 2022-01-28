@@ -60,6 +60,74 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "createOffer",
+      "accounts": [
+        {
+          "name": "initializer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "offer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "initializerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "takerTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "giveAmount",
+          "type": "u64"
+        },
+        {
+          "name": "receiveAmount",
+          "type": "u64"
+        },
+        {
+          "name": "offerBump",
+          "type": "u8"
+        },
+        {
+          "name": "vaultBump",
+          "type": "u8"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -87,6 +155,34 @@
           {
             "name": "seller",
             "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Offer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initializer",
+            "type": "publicKey"
+          },
+          {
+            "name": "initializerTokenAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "takerTokenAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "giveAmount",
+            "type": "u64"
+          },
+          {
+            "name": "receiveAmount",
+            "type": "u64"
           }
         ]
       }

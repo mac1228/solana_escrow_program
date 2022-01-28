@@ -2,19 +2,11 @@ import React, { useRef } from "react";
 import { Button, TextField } from "@mui/material";
 import * as anchor from "@project-serum/anchor";
 import { useSnackbar } from "notistack";
-import { createItemAccount, getAllItemAccounts } from "Helper";
-import { ItemAccount } from "Classes";
+import { createItemAccount, getAllItemAccounts, EscrowContext } from "Helper";
 
-interface IAddItemsForm {
-  setItemAccounts: React.Dispatch<
-    React.SetStateAction<ItemAccount[] | undefined>
-  >;
-  program?: anchor.Program<anchor.Idl>;
-  provider?: anchor.Provider;
-}
-
-export function AddItemsForm(props: IAddItemsForm) {
-  const { setItemAccounts, program, provider } = props;
+export function AddItemsForm() {
+  const { program, setItemAccounts, provider } =
+    React.useContext(EscrowContext);
   const { enqueueSnackbar } = useSnackbar();
   const itemNameRef = useRef<HTMLInputElement>();
   const marketNameRef = useRef<HTMLInputElement>();
