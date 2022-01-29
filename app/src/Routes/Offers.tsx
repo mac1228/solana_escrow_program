@@ -1,39 +1,33 @@
 import React, { useEffect, useContext, useState } from "react";
-import { HeaderBar } from "Components";
+import { HeaderBar, OfferItem } from "Components";
 import { EscrowContext } from "Helper";
 import * as anchor from "@project-serum/anchor";
-import { Grid, Box } from "@mui/material";
-import { ItemAccount } from "Classes";
+import { Grid } from "@mui/material";
 
 export function Offers() {
-  const { program, itemAccounts, provider } = useContext(EscrowContext);
-  const [offers, setOffers] = useState<ItemAccount[]>();
+  const { program, provider } = useContext(EscrowContext);
+  const [myOffers, setMyOffers] = useState<anchor.ProgramAccount[]>();
 
   useEffect(() => {
-    const getAllOffers = async (
+    const getMyOffers = async (
       program: anchor.Program,
-      itemAccounts: ItemAccount[],
       provider: anchor.Provider
     ) => {
-      const allOffers = await program.account.offer.all();
-      console.log(allOffers);
-      const allOffersParsed = allOffers.map((offer) => {
-        return (
-          itemAccounts.find(async (item) => {
-            const tokenAccountInfo =
-              await provider.connection.getParsedAccountInfo(
-                offer.account.initializerTokenAccount
-              );
-            return item.getMintPublicKey().toBase58() === "";
-          }) || ({} as ItemAccount)
-        );
-      });
-      setOffers(allOffersParsed);
+      const offers = await program.account.offer.all([
+        {
+          memcmp: {
+            offset: 8,
+            bytes: provider.wallet.publicKey.toBase58(),
+          },
+        },
+      ]);
+      console.log(offers);
+      setMyOffers(offers);
     };
-    if (program && itemAccounts && provider) {
-      getAllOffers(program, itemAccounts, provider);
+    if (program && provider) {
+      getMyOffers(program, provider);
     }
-  }, [program, itemAccounts, provider]);
+  }, [program, provider]);
 
   return (
     <>
@@ -46,19 +40,21 @@ export function Offers() {
         }}
       >
         <h1>Offers Made</h1>
-        <Grid
-          style={{ width: "95%" }}
-          container
-          spacing={2}
-          justifyContent={"flex-start"}
-          alignItems={"center"}
-        >
-          {offers?.map((offer) => (
-            <Grid item key={offer.getItemPublicKey().toBase58()}>
-              {offer.getName()}
-            </Grid>
-          ))}
-        </Grid>
+        {myOffers && (
+          <Grid
+            style={{ width: "95%" }}
+            container
+            spacing={2}
+            justifyContent={"flex-start"}
+            alignItems={"center"}
+          >
+            {myOffers.map((offer) => (
+              <Grid item key={offer.publicKey.toBase58()}>
+                <OfferItem offer={offer} />
+              </Grid>
+            ))}
+          </Grid>
+        )}
         <h1>Offers Received</h1>
       </div>
     </>
