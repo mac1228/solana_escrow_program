@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::AccountsClose;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{mint_to, transfer, Mint, MintTo, Transfer, Token, TokenAccount},
@@ -109,8 +110,9 @@ pub mod solana_escrow {
             ctx.accounts.offer.give_amount
         )?;
 
-        // close offer and vault account and send rent to initializer
-
+        // close offer account and send rent to initializer
+        ctx.accounts.offer.close(ctx.accounts.initializer.to_account_info())?;
+        
         Ok(())
     }
 }
@@ -232,6 +234,7 @@ pub struct CreateOffer<'info> {
 #[instruction(taker_give_amount: u64)]
 pub struct AcceptOffer<'info> {
     #[account(
+        mut,
         constraint = 
             offer.initializer == initializer.key() &&
             offer.taker_token_account == taker_give_token_account.key() &&
@@ -241,6 +244,7 @@ pub struct AcceptOffer<'info> {
     pub offer: Box<Account<'info, Offer>>,
     #[account(mut)]
     pub taker: Signer<'info>,
+    #[account(mut)]
     pub initializer: SystemAccount<'info>,
     #[account(mut)]
     pub taker_give_token_account: Account<'info, TokenAccount>,
