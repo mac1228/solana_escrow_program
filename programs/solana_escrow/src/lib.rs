@@ -64,6 +64,55 @@ pub mod solana_escrow {
         transfer(cpi_context, give_amount)?;
         Ok(())
     }
+
+    pub fn accept_offer(ctx: Context<AcceptOffer>, taker_give_amount: u64) -> ProgramResult {
+        // transfer tokens from taker to initializer
+        let transfer_accounts = Transfer {
+            from: ctx.accounts.taker_give_token_account.to_account_info(),
+            to: ctx.accounts.initializer_receive_token_account.to_account_info(),
+            authority: ctx.accounts.taker.to_account_info()
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        let cpi_context = CpiContext::new(token_program, transfer_accounts);
+        transfer(cpi_context, taker_give_amount)?;
+
+        // transfer tokens from vault to taker
+        let (_vault_authority, vault_bump) = Pubkey::find_program_address(
+            &[
+                ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                ctx.accounts.offer.receive_amount.to_le_bytes().as_ref()
+            ], 
+            ctx.program_id
+        );
+        let vault_transfer_accounts = Transfer {
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.taker_receive_token_account.to_account_info(),
+            authority: ctx.accounts.offer.to_account_info()
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        transfer(
+            CpiContext::new_with_signer(
+                token_program, 
+                vault_transfer_accounts, 
+                &[
+                    &[
+                        ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                        ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                        ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                        ctx.accounts.offer.receive_amount.to_le_bytes().as_ref(),
+                        &[vault_bump]
+                    ]
+                ]
+            ), 
+            ctx.accounts.offer.give_amount
+        )?;
+
+        // close offer and vault account and send rent to initializer
+
+        Ok(())
+    }
 }
 
 // Item Account
@@ -175,6 +224,47 @@ pub struct CreateOffer<'info> {
     pub taker_token_account: Account<'info, TokenAccount>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+// Instruction: Accept Offer
+#[derive(Accounts)]
+#[instruction(taker_give_amount: u64)]
+pub struct AcceptOffer<'info> {
+    #[account(
+        constraint = 
+            offer.initializer == initializer.key() &&
+            offer.taker_token_account == taker_give_token_account.key() &&
+            offer.give_amount == vault_token_account.amount &&
+            offer.receive_amount == taker_give_amount
+    )]
+    pub offer: Box<Account<'info, Offer>>,
+    #[account(mut)]
+    pub taker: Signer<'info>,
+    pub initializer: SystemAccount<'info>,
+    #[account(mut)]
+    pub taker_give_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub vault_token_account: Account<'info, TokenAccount>,
+    #[account(
+        init_if_needed, 
+        payer = taker, 
+        associated_token::mint = initializer_mint, 
+        associated_token::authority = taker
+    )]
+    pub taker_receive_token_account: Account<'info, TokenAccount>,
+    #[account(
+        init_if_needed, 
+        payer = taker, 
+        associated_token::mint = taker_mint, 
+        associated_token::authority = initializer
+    )]
+    pub initializer_receive_token_account: Account<'info, TokenAccount>,
+    pub taker_mint: Box<Account<'info, Mint>>,
+    pub initializer_mint: Box<Account<'info, Mint>>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
 }
 

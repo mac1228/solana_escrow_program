@@ -22,6 +22,8 @@ describe("solana_escrow", () => {
   const program = (anchor as any).workspace
     .SolanaEscrow as Program<SolanaEscrow>;
   let tokenAccountPublicKey: web3.PublicKey;
+  let offer: anchor.web3.PublicKey;
+  let offerBump: number;
 
   it("Creates item account", async () => {
     const itemAccount = web3.Keypair.generate();
@@ -166,7 +168,8 @@ describe("solana_escrow", () => {
 
     const giveAmount = new anchor.BN(20);
     const receiveAmount = new anchor.BN(50);
-    const [offer, offerBump] = await web3.PublicKey.findProgramAddress(
+
+    [offer, offerBump] = await web3.PublicKey.findProgramAddress(
       [
         otherTokenAccountPublicKey.toBuffer(),
         giveAmount.toBuffer("le", 8),
@@ -209,6 +212,86 @@ describe("solana_escrow", () => {
       vault
     );
     assert.ok(vaultTokenAmount.value.uiAmount === giveAmount.toNumber());
+  });
+
+  it("Accepts offer", async () => {
+    const fetchedOfferAccount = await program.account.offer.fetch(offer);
+    const giveAmount = fetchedOfferAccount.receiveAmount;
+    const [vault, _vaultBump] = await web3.PublicKey.findProgramAddress(
+      [
+        fetchedOfferAccount.initializerTokenAccount.toBuffer(),
+        fetchedOfferAccount.takerTokenAccount.toBuffer(),
+      ],
+      program.programId
+    );
+
+    // Get associated token account for taker to receive tokens
+    const initializerTokenAccountInfo =
+      await provider.connection.getParsedAccountInfo(
+        fetchedOfferAccount.initializerTokenAccount
+      );
+    const initializerMintBase58: string = (
+      initializerTokenAccountInfo.value.data as any
+    ).parsed.info.mint;
+    const initializerMintPublicKey = new web3.PublicKey(initializerMintBase58);
+    const takerReceiveTokenAccount = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      initializerMintPublicKey,
+      provider.wallet.publicKey
+    );
+
+    // Get associated token account for taker to receive tokens
+    const takerTokenAccountInfo =
+      await provider.connection.getParsedAccountInfo(
+        fetchedOfferAccount.takerTokenAccount
+      );
+    const takerMintBase58: string = (takerTokenAccountInfo.value.data as any)
+      .parsed.info.mint;
+    const takerMintPublicKey = new web3.PublicKey(takerMintBase58);
+
+    const initializerReceiveTokenAccount =
+      await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        takerMintPublicKey,
+        fetchedOfferAccount.initializer
+      );
+
+    await program.rpc.acceptOffer(giveAmount, {
+      accounts: {
+        offer,
+        taker: provider.wallet.publicKey,
+        initializer: fetchedOfferAccount.initializer,
+        takerGiveTokenAccount: fetchedOfferAccount.takerTokenAccount,
+        vaultTokenAccount: vault,
+        takerReceiveTokenAccount,
+        initializerReceiveTokenAccount,
+        takerMint: takerMintPublicKey,
+        initializerMint: initializerMintPublicKey,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [],
+    });
+
+    const fetchedTakerReceiveTokenAccount =
+      await provider.connection.getParsedAccountInfo(takerReceiveTokenAccount);
+    const takerReceiveTokenAccountAmount = (
+      fetchedTakerReceiveTokenAccount.value.data as any
+    ).parsed.info.tokenAmount.uiAmount;
+    assert.ok(takerReceiveTokenAccountAmount === 20);
+
+    const fetchedInitializerReceiveTokenAccount =
+      await provider.connection.getParsedAccountInfo(
+        initializerReceiveTokenAccount
+      );
+    const initializerReceiveTokenAccountAmount = (
+      fetchedInitializerReceiveTokenAccount.value.data as any
+    ).parsed.info.tokenAmount.uiAmount;
+    assert.ok(initializerReceiveTokenAccountAmount === 50);
   });
 
   it("Creates new token on client", async () => {
