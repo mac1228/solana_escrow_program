@@ -2,9 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, transfer, Mint, MintTo, Transfer, Token, TokenAccount},
+    token::{mint_to, transfer, Mint, MintTo, Transfer, Token, TokenAccount, CloseAccount, close_account},
 };
-declare_id!("mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx");
+declare_id!("8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q");
 
 #[program]
 pub mod solana_escrow {
@@ -108,6 +108,29 @@ pub mod solana_escrow {
                 ]
             ), 
             ctx.accounts.offer.give_amount
+        )?;
+
+        // close vault account and send rent to initializer
+        let vault_close_accounts = CloseAccount {
+            account: ctx.accounts.vault_token_account.to_account_info(),
+            destination: ctx.accounts.initializer.to_account_info(),
+            authority: ctx.accounts.offer.to_account_info()
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        close_account(
+            CpiContext::new_with_signer(
+                token_program,
+                vault_close_accounts,
+                &[
+                    &[
+                        ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                        ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                        ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                        ctx.accounts.offer.receive_amount.to_le_bytes().as_ref(),
+                        &[vault_bump]
+                    ]
+                ]
+            )
         )?;
 
         // close offer account and send rent to initializer
