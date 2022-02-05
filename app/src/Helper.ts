@@ -47,7 +47,6 @@ export const getAllItemAccounts = async (
   >
 ) => {
   const allItems = await program.account.itemAccount.all();
-  console.log(allItems);
   const allItemAccounts = allItems.map((item) => {
     const account: IItemAccount = {
       itemPublicKey: item.publicKey,
