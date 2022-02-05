@@ -4,7 +4,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{mint_to, transfer, Mint, MintTo, Transfer, Token, TokenAccount, CloseAccount, close_account},
 };
-declare_id!("8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q");
+declare_id!("mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx");
 
 #[program]
 pub mod solana_escrow {

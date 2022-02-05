@@ -20,6 +20,10 @@ export function HeaderBar() {
     navigate("/offers");
   };
 
+  const onMyItemsClick = () => {
+    navigate("/my-items");
+  };
+
   return (
     <AppBar position="static" style={{ marginBottom: " 2rem" }}>
       <Toolbar style={{ display: "flex" }}>
@@ -31,6 +35,13 @@ export function HeaderBar() {
         >
           Solana Escrow Program
         </Typography>
+        <Button
+          variant="contained"
+          onClick={onMyItemsClick}
+          style={{ marginRight: ".5rem" }}
+        >
+          My Items
+        </Button>
         <Button
           variant="contained"
           onClick={onOffersClick}

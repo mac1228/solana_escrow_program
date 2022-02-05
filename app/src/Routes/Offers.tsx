@@ -26,20 +26,34 @@ export function Offers() {
   return (
     <>
       <HeaderBar />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <h1>Offers Made</h1>
-        <OffersMadeGrid />
-        <h1>Offers Received</h1>
-        {ownedTokenAccounts && (
-          <OffersReceivedGrid tokenAccounts={ownedTokenAccounts} />
-        )}
-      </div>
+      <Grid container spacing={1}>
+        <Grid
+          item
+          xs={6}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <h1>Offers Received</h1>
+          {ownedTokenAccounts && (
+            <OffersReceivedGrid tokenAccounts={ownedTokenAccounts} />
+          )}
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <h1>Offers Made</h1>
+          <OffersMadeGrid />
+        </Grid>
+      </Grid>
     </>
   );
 }
@@ -70,13 +84,7 @@ function OffersMadeGrid() {
   }, [program, provider]);
 
   return offersMade ? (
-    <Grid
-      style={{ width: "95%" }}
-      container
-      spacing={2}
-      justifyContent={"flex-start"}
-      alignItems={"center"}
-    >
+    <Grid container spacing={2} justifyContent={"space-around"}>
       {offersMade.map((offer) => (
         <Grid item key={offer.publicKey.toBase58()}>
           <OfferItem offer={offer} />
@@ -122,13 +130,7 @@ function OffersReceivedGrid(props: IOffersReceivedGrid) {
   }, [program, tokenAccounts]);
 
   return offersReceived ? (
-    <Grid
-      style={{ width: "95%" }}
-      container
-      spacing={2}
-      justifyContent={"flex-start"}
-      alignItems={"center"}
-    >
+    <Grid container spacing={2} justifyContent={"space-around"}>
       {offersReceived.map((offer) => (
         <Grid item key={offer.publicKey.toBase58()}>
           <OfferItem offer={offer} />

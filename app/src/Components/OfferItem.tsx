@@ -1,7 +1,15 @@
-import React, { useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import * as anchor from "@project-serum/anchor";
+import { web3 } from "@project-serum/anchor";
 import { EscrowContext } from "Helper";
+import { Button } from "@mui/material";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  Token,
+} from "@solana/spl-token";
 import "./OfferItem.css";
+import { useSnackbar } from "notistack";
 
 interface IOfferItem {
   offer: anchor.ProgramAccount;
@@ -9,20 +17,97 @@ interface IOfferItem {
 
 export function OfferItem(props: IOfferItem) {
   const { offer } = props;
-  const { provider } = useContext(EscrowContext);
+  const { provider, program, itemAccounts } = useContext(EscrowContext);
+  const { enqueueSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    const getOfferTokenAccount = async (provider: anchor.Provider) => {
-      const tokenAccountInfo = await provider.connection.getParsedAccountInfo(
-        offer.account.initializerTokenAccount
-      );
-      console.log(tokenAccountInfo);
-    };
+  const isInitializer = offer.account.initializer.equals(
+    provider?.wallet.publicKey
+  );
+  const giveItemAccount = itemAccounts?.find((item) =>
+    item
+      .getTokenAccountPublicKey()
+      .equals(offer.account.initializerTokenAccount)
+  );
+  const takerItemAccount = itemAccounts?.find((item) =>
+    item.getTokenAccountPublicKey().equals(offer.account.takerTokenAccount)
+  );
 
-    if (provider) {
-      getOfferTokenAccount(provider);
+  const onAcceptOfferClick = async () => {
+    try {
+      if (provider && program) {
+        const offerAccount = offer.account;
+        const giveAmount = offerAccount.receiveAmount;
+        const [vault] = await web3.PublicKey.findProgramAddress(
+          [
+            offerAccount.initializerTokenAccount.toBuffer(),
+            offerAccount.takerTokenAccount.toBuffer(),
+          ],
+          program.programId
+        );
+
+        // Get associated token account for taker to receive tokens
+        const initializerTokenAccountInfo =
+          await provider.connection.getParsedAccountInfo(
+            offerAccount.initializerTokenAccount
+          );
+        const initializerMintBase58: string = (
+          initializerTokenAccountInfo.value?.data as any
+        ).parsed.info.mint;
+        const initializerMintPublicKey = new web3.PublicKey(
+          initializerMintBase58
+        );
+        const takerReceiveTokenAccount = await Token.getAssociatedTokenAddress(
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+          TOKEN_PROGRAM_ID,
+          initializerMintPublicKey,
+          provider.wallet.publicKey
+        );
+
+        // Get associated token account for taker to receive tokens
+        const takerTokenAccountInfo =
+          await provider.connection.getParsedAccountInfo(
+            offerAccount.takerTokenAccount
+          );
+        const takerMintBase58: string = (
+          takerTokenAccountInfo.value?.data as any
+        ).parsed.info.mint;
+        const takerMintPublicKey = new web3.PublicKey(takerMintBase58);
+
+        const initializerReceiveTokenAccount =
+          await Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID,
+            TOKEN_PROGRAM_ID,
+            takerMintPublicKey,
+            offerAccount.initializer
+          );
+
+        await program.rpc.acceptOffer(giveAmount, {
+          accounts: {
+            offer: offer.publicKey,
+            taker: provider.wallet.publicKey,
+            initializer: offerAccount.initializer,
+            takerGiveTokenAccount: offerAccount.takerTokenAccount,
+            vaultTokenAccount: vault,
+            takerReceiveTokenAccount,
+            initializerReceiveTokenAccount,
+            takerMint: takerMintPublicKey,
+            initializerMint: initializerMintPublicKey,
+            systemProgram: web3.SystemProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          },
+          signers: [],
+        });
+
+        enqueueSnackbar("Accepted offer!", { variant: "success" });
+      }
+    } catch (err) {
+      enqueueSnackbar(`Failed to accept offer: ${(err as any).toString()}`, {
+        variant: "error",
+      });
     }
-  });
+  };
 
   return (
     <div
@@ -36,19 +121,26 @@ export function OfferItem(props: IOfferItem) {
       }}
     >
       <div>Initializer:</div>
-      <div className="OfferField">{offer.account.initializer.toBase58()}</div>
-      <div>Item to give:</div>
       <div className="OfferField">
-        {offer.account.initializerTokenAccount.toBase58()}
+        {isInitializer ? "You" : offer.account.initializer.toBase58()}
       </div>
-      <div>Give amount:</div>
+      <div>{isInitializer ? "Item you'll give:" : "Item you'll receive:"}</div>
+      <div className="OfferField">{giveItemAccount?.getName()}</div>
+      <div>{isInitializer ? "Give amount:" : "Receive amount:"}</div>
       <div className="OfferField">{offer.account.giveAmount.toString()}</div>
-      <div>Item to receive:</div>
-      <div className="OfferField">
-        {offer.account.takerTokenAccount.toBase58()}
-      </div>
-      <div>Receive amount:</div>
+      <div>{isInitializer ? "Item you'll receive:" : "Item you'll give:"}</div>
+      <div className="OfferField">{takerItemAccount?.getName()}</div>
+      <div>{isInitializer ? "Receive amount:" : "Give amount:"}</div>
       <div>{offer.account.receiveAmount.toString()}</div>
+      {!isInitializer && (
+        <Button
+          className="AcceptItem"
+          variant={"contained"}
+          onClick={onAcceptOfferClick}
+        >
+          Accept Offer
+        </Button>
+      )}
     </div>
   );
 }

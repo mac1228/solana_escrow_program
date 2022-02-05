@@ -1,6 +1,6 @@
 [programs.localnet]
 solana_escrow = "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
-#solana_escrow_ubuntu = "GXwRXoHCS1LPZMka3rB4jPgtU9wXVmSnJWumG7DxdiyF"
+#solana_escrow_ubuntu = "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
 #solana_escrow_mac = "8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q"
 
 [registry]
