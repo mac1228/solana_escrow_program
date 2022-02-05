@@ -32,6 +32,40 @@ export function OfferItem(props: IOfferItem) {
     item.getTokenAccountPublicKey().equals(offer.account.takerTokenAccount)
   );
 
+  const onCancelOfferClick = async () => {
+    try {
+      if (program && provider) {
+        const offerAccount = offer.account;
+        const [vault] = await web3.PublicKey.findProgramAddress(
+          [
+            offerAccount.initializerTokenAccount.toBuffer(),
+            offerAccount.takerTokenAccount.toBuffer(),
+          ],
+          program.programId
+        );
+
+        await program.rpc.cancelOffer({
+          accounts: {
+            offer: offer.publicKey,
+            initializer: provider.wallet.publicKey,
+            initializerTokenAccount: offerAccount.initializerTokenAccount,
+            vaultTokenAccount: vault,
+            systemProgram: web3.SystemProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          },
+          signers: [],
+        });
+        enqueueSnackbar("Cancelled offer", {
+          variant: "success",
+        });
+      }
+    } catch (err) {
+      enqueueSnackbar(`Failed to cancel offer: ${(err as any).toString()}`, {
+        variant: "error",
+      });
+    }
+  };
+
   const onAcceptOfferClick = async () => {
     try {
       if (provider && program) {
@@ -132,7 +166,15 @@ export function OfferItem(props: IOfferItem) {
       <div className="OfferField">{takerItemAccount?.getName()}</div>
       <div>{isInitializer ? "Receive amount:" : "Give amount:"}</div>
       <div>{offer.account.receiveAmount.toString()}</div>
-      {!isInitializer && (
+      {isInitializer ? (
+        <Button
+          className="AcceptItem"
+          variant={"contained"}
+          onClick={onCancelOfferClick}
+        >
+          Cancel Offer
+        </Button>
+      ) : (
         <Button
           className="AcceptItem"
           variant={"contained"}
