@@ -138,6 +138,69 @@ pub mod solana_escrow {
         
         Ok(())
     }
+
+    pub fn cancel_offer(ctx: Context<CancelOffer>) -> ProgramResult {
+        // transfer tokens from vault back to initializer
+        let (_vault_authority, vault_bump) = Pubkey::find_program_address(
+            &[
+                ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                ctx.accounts.offer.receive_amount.to_le_bytes().as_ref()
+            ], 
+            ctx.program_id
+        );
+        let vault_transfer_accounts = Transfer {
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.initializer_token_account.to_account_info(),
+            authority: ctx.accounts.offer.to_account_info()
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        transfer(
+            CpiContext::new_with_signer(
+                token_program, 
+                vault_transfer_accounts, 
+                &[
+                    &[
+                        ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                        ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                        ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                        ctx.accounts.offer.receive_amount.to_le_bytes().as_ref(),
+                        &[vault_bump]
+                    ]
+                ]
+            ), 
+            ctx.accounts.offer.give_amount
+        )?;
+
+        // close vault account and send rent to initializer
+        let vault_close_accounts = CloseAccount {
+            account: ctx.accounts.vault_token_account.to_account_info(),
+            destination: ctx.accounts.initializer.to_account_info(),
+            authority: ctx.accounts.offer.to_account_info()
+        };
+        let token_program = ctx.accounts.token_program.to_account_info();
+        close_account(
+            CpiContext::new_with_signer(
+                token_program,
+                vault_close_accounts,
+                &[
+                    &[
+                        ctx.accounts.offer.initializer_token_account.key().as_ref(), 
+                        ctx.accounts.offer.give_amount.to_le_bytes().as_ref(), 
+                        ctx.accounts.offer.taker_token_account.key().as_ref(), 
+                        ctx.accounts.offer.receive_amount.to_le_bytes().as_ref(),
+                        &[vault_bump]
+                    ]
+                ]
+            )
+        )?;
+
+        // close offer account and send rent to initializer
+        ctx.accounts.offer.close(ctx.accounts.initializer.to_account_info())?;
+        
+        Ok(())
+    }
 }
 
 // Item Account
@@ -293,6 +356,21 @@ pub struct AcceptOffer<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
+}
+
+// Instruction: Cancel Offer
+#[derive(Accounts)]
+pub struct CancelOffer<'info> {
+    #[account(mut, constraint = offer.initializer == initializer.key())]
+    pub offer: Box<Account<'info, Offer>>,
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    #[account(mut, constraint = initializer_token_account.owner == initializer.key())]
+    pub initializer_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub vault_token_account: Account<'info, TokenAccount>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
 }
 
 // Errors

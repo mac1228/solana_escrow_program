@@ -22,6 +22,7 @@ describe("solana_escrow", () => {
   const program = (anchor as any).workspace
     .SolanaEscrow as Program<SolanaEscrow>;
   let tokenAccountPublicKey: web3.PublicKey;
+  let otherTokenAccountPublicKey: web3.PublicKey;
   let offer: anchor.web3.PublicKey;
   let offerBump: number;
 
@@ -145,7 +146,7 @@ describe("solana_escrow", () => {
     const market = "Fruit";
     const supply = new anchor.BN(100);
     const mintAccount = web3.Keypair.generate();
-    const otherTokenAccountPublicKey = await Token.getAssociatedTokenAddress(
+    otherTokenAccountPublicKey = await Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
       mintAccount.publicKey,
@@ -292,6 +293,109 @@ describe("solana_escrow", () => {
       fetchedInitializerReceiveTokenAccount.value.data as any
     ).parsed.info.tokenAmount.uiAmount;
     assert.ok(initializerReceiveTokenAccountAmount === 50);
+  });
+
+  it("Cancels offer", async () => {
+    // Create Item
+    const itemAccount = web3.Keypair.generate();
+    const name = "Xbox";
+    const market = "Consoles";
+    const supply = new anchor.BN(400);
+    const mintAccount = web3.Keypair.generate();
+    const associatedTokenAccountPublicKey =
+      await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        mintAccount.publicKey,
+        provider.wallet.publicKey
+      );
+
+    await program.rpc.createItemAccount(name, market, supply, {
+      accounts: {
+        itemAccount: itemAccount.publicKey,
+        mintAccount: mintAccount.publicKey,
+        associatedTokenAccount: associatedTokenAccountPublicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [itemAccount, mintAccount],
+    });
+
+    // Get token balance
+    let tokenBalance = await provider.connection.getTokenAccountBalance(
+      associatedTokenAccountPublicKey
+    );
+    assert.ok(tokenBalance.value.uiAmount === 400);
+
+    // Create Offer
+    const giveAmount = new anchor.BN(20);
+    const receiveAmount = new anchor.BN(50);
+
+    [offer, offerBump] = await web3.PublicKey.findProgramAddress(
+      [
+        associatedTokenAccountPublicKey.toBuffer(),
+        giveAmount.toBuffer("le", 8),
+        otherTokenAccountPublicKey.toBuffer(),
+        receiveAmount.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    const [vault, vaultBump] = await web3.PublicKey.findProgramAddress(
+      [
+        associatedTokenAccountPublicKey.toBuffer(),
+        otherTokenAccountPublicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    await program.rpc.createOffer(
+      giveAmount,
+      receiveAmount,
+      offerBump,
+      vaultBump,
+      {
+        accounts: {
+          initializer: provider.wallet.publicKey,
+          offer: offer,
+          initializerTokenAccount: associatedTokenAccountPublicKey,
+          mint: mintAccount.publicKey,
+          vaultTokenAccount: vault,
+          takerTokenAccount: otherTokenAccountPublicKey,
+          systemProgram: web3.SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [],
+      }
+    );
+
+    // Get token balance
+    tokenBalance = await provider.connection.getTokenAccountBalance(
+      associatedTokenAccountPublicKey
+    );
+    assert.ok(tokenBalance.value.uiAmount === 380);
+
+    // Cancel Offer
+    await program.rpc.cancelOffer({
+      accounts: {
+        offer,
+        initializer: provider.wallet.publicKey,
+        initializerTokenAccount: associatedTokenAccountPublicKey,
+        vaultTokenAccount: vault,
+        systemProgram: web3.SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [],
+    });
+
+    // Get token balance
+    tokenBalance = await provider.connection.getTokenAccountBalance(
+      associatedTokenAccountPublicKey
+    );
+    assert.ok(tokenBalance.value.uiAmount === 400);
   });
 
   it("Creates new token on client", async () => {
