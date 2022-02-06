@@ -3,11 +3,14 @@ solana_escrow = "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
 #solana_escrow_ubuntu = "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
 #solana_escrow_mac = "8YXzCCFJc4taMWijTpuT2W87KpWp2AkJy4Fsg9Mpnr4q"
 
+[programs.devnet]
+solana_escrow = "mPDsnHtotv9hio1izTtLS5ejPokcRvXGdyYLoWDPezx"
+
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/home/mike/.config/solana/id.json"
 #wallet_ubuntu = "/home/mike/.config/solana/id.json"
 #wallet_mac = "/Users/michaelcurd/.config/solana/id.json"

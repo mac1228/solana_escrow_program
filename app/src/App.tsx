@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { Main, Trade, Offers, MyItems } from "Routes";
 import * as anchor from "@project-serum/anchor";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
@@ -8,7 +8,7 @@ import { EscrowContext, IEscrowContext } from "Helper";
 
 export default function App() {
   const wallet = useAnchorWallet();
-  const network = "http://127.0.0.1:8899";
+  const network = "https://api.devnet.solana.com";
   const [program, setProgram] = useState<anchor.Program>();
   const [provider, setProvider] = useState<anchor.Provider>();
   const [itemAccounts, setItemAccounts] = useState<ItemAccount[]>();
@@ -25,7 +25,7 @@ export default function App() {
 
   return (
     <EscrowContext.Provider value={escrowContextValue}>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<Main />} />
           <Route path="/trade/:itemId" element={<Trade />} />
@@ -33,7 +33,7 @@ export default function App() {
           <Route path="/my-items" element={<MyItems />} />
           <Route path="*" element={<Main />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </EscrowContext.Provider>
   );
 }
